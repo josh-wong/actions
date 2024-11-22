@@ -1,9 +1,11 @@
-name: Check PAT Expiration
+name: Monitor GitHub PAT Expiration
 
 on:
   # schedule:
-    # - cron: "0 8 * * *" # Runs daily at 8 AM UTC
-  workflow_dispatch:
+    # Run daily at midnight UTC
+    # - cron: '0 8 * * *'
+
+  workflow_dispatch: # Allow manual triggering of the workflow
 
 jobs:
   check-expiration:
@@ -12,18 +14,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Read check-token-expiration/tokens.json
+        id: read-tokens
         run: |
-          sudo apt-get update
-          sudo apt-get install -y jq
-
-      - name: Load tokens JSON
-        id: load-json
-        run: |
+          if [[ ! -f check-token-expiration/tokens.json ]]; then
+            echo "check-token-expiration/tokens.json not found. Exiting."
+            exit 1
+          fi
           TOKENS=$(cat check-token-expiration/tokens.json)
           echo "tokens=$TOKENS" >> $GITHUB_ENV
 
-      - name: Check expiration dates
+      - name: Check token expiration
         id: check-expiration
         run: |
           TODAY=$(date -u +"%Y-%m-%d")
@@ -53,6 +54,8 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          curl -X POST -H 'Content-type: application/json' --data '{
-            "text": "The following GitHub tokens are expiring soon:\n'"${{ steps.check-expiration.outputs.expiring_tokens }}"'"
-          }' $SLACK_WEBHOOK_URL
+          PAYLOAD=$(jq -n --arg tokens "${{ steps.check-expiration.outputs.expiring_tokens }}" '{
+            text: "⚠️ The following GitHub tokens are close to expiration:\n" + $tokens
+          }')
+
+          curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK_URL"
