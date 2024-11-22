@@ -1,0 +1,58 @@
+name: Check PAT Expiration
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # Runs daily at 8 AM UTC
+  workflow_dispatch:
+
+jobs:
+  check-expiration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Load tokens JSON
+        id: load-json
+        run: |
+          TOKENS=$(cat tokens.json)
+          echo "tokens=$TOKENS" >> $GITHUB_ENV
+
+      - name: Check expiration dates
+        id: check-expiration
+        run: |
+          TODAY=$(date -u +"%Y-%m-%d")
+          NOTIFY=false
+          EXPIRING_TOKENS=""
+
+          for row in $(echo $tokens | jq -c '.[]'); do
+            TOKEN_NAME=$(echo $row | jq -r '.token_name')
+            EXPIRATION_DATE=$(echo $row | jq -r '.expiration_date')
+            DAYS_LEFT=$(( ($(date -d "$EXPIRATION_DATE" +%s) - $(date -d "$TODAY" +%s)) / 86400 ))
+
+            if [ $DAYS_LEFT -le 7 ]; then
+              NOTIFY=true
+              EXPIRING_TOKENS="${EXPIRING_TOKENS}${TOKEN_NAME} (Expires in ${DAYS_LEFT} days)\n"
+            fi
+          done
+
+          if $NOTIFY; then
+            echo "notify=true" >> $GITHUB_OUTPUT
+            echo "expiring_tokens=$EXPIRING_TOKENS" >> $GITHUB_OUTPUT
+          else
+            echo "notify=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        if: steps.check-expiration.outputs.notify == 'true'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data '{
+            "text": "The following GitHub tokens are expiring soon:\n'"${{ steps.check-expiration.outputs.expiring_tokens }}"'"
+          }' $SLACK_WEBHOOK_URL
