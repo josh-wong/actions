@@ -20,7 +20,7 @@ jobs:
       - name: Load tokens JSON
         id: load-json
         run: |
-          TOKENS=$(cat tokens.json)
+          TOKENS=$(cat check-token-expiration/tokens.json)
           echo "tokens=$TOKENS" >> $GITHUB_ENV
 
       - name: Check expiration dates
