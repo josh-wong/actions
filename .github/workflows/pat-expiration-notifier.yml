@@ -1,26 +1,21 @@
-name: Notify About Expiring PATs
+name: Notify Token Expiry
 
 on:
-  personal_access_token.expiring:
+  repository_dispatch:
     types:
-      - expires_soon
+      - pat_expiring
   workflow_dispatch:
 
 jobs:
-  notify-central-repo:
+  notify:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Dispatch Event to Central Repository
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.repos.createDispatchEvent({
-              owner: 'josh-wong',
-              repo: 'pat-expiration-monitor',
-              event_type: 'pat_expiring',
-              client_payload: {
-                token: context.payload.token,
-                repository: context.payload.repository
-              }
-            })
+      - name: Send Slack Notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "text": "🚨 Token Expiring: *${{ github.event.token_name }}* will expire on `${{ github.event.expires_at }}`. Please renew it."
+          }' \
+          $SLACK_WEBHOOK_URL
