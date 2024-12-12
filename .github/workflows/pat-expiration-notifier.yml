@@ -1,0 +1,26 @@
+name: Notify About Expiring PATs
+
+on:
+  personal_access_token.expiring:
+    types:
+      - expires_soon
+  workflow_dispatch:
+
+jobs:
+  notify-central-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Dispatch Event to Central Repository
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.repos.createDispatchEvent({
+              owner: 'josh-wong',
+              repo: 'pat-expiration-monitor',
+              event_type: 'pat_expiring',
+              client_payload: {
+                token: context.payload.token,
+                repository: context.payload.repository
+              }
+            })
