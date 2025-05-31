@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+
+require "set"
+
+default_branch = ARGV.shift
+versions = ARGV
+
+versions.inject(Set.new) {|acc, v|
+  major_version, minor_version, patch_version = v.strip.split(".")
+
+  if patch_version == "0"
+    if minor_version == "0"
+      # Example: "Project 2.0.0" -> branch: "master"
+      # This GitHub project corresponds to the "main" branch.
+      acc << default_branch
+    else
+      # Example: "Project 1.3.0" -> branch: "1"
+      # This GitHub project corresponds to a support branch.
+      acc << major_version
+    end
+  else
+    # Example: "Project 1.2.3" -> branch: "1.2"
+    # This GitHub project corresponds to a release branch.
+    acc << "#{major_version}.#{minor_version}"
+  end
+
+  acc
+}.each {|branch|
+  puts branch
+}
