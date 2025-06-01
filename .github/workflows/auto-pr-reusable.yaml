@@ -41,7 +41,7 @@ jobs:
         env:
           SCRIPT_PATH: ../auto-pr/auto-pr-script
         run: |
-          assignee=$($SCRIPT_PATH/fetch_gh_user_info "${{ github.event.repository.owner.login }}" "${{ github.event.repository.name }}" "${{ github.event.pull_request.user.login }}")
+          assignee=$($SCRIPT_PATH/fetch-gh-user-info "${{ github.event.repository.owner.login }}" "${{ github.event.repository.name }}" "${{ github.event.pull_request.user.login }}")
           echo -------------
           echo "assignee: $assignee"
           echo -------------
@@ -52,7 +52,7 @@ jobs:
             new_pr_assignee="${{ github.event.pull_request.user.login }}"
           fi
 
-          versions=$($SCRIPT_PATH/fetch_gh_proj_versions "${{ github.event.repository.owner.login }}" "${{ github.event.repository.name }}" "${{ github.event.number }}" "${{ inputs.project_base_name}}")
+          versions=$($SCRIPT_PATH/fetch-gh-proj-versions "${{ github.event.repository.owner.login }}" "${{ github.event.repository.name }}" "${{ github.event.number }}" "${{ inputs.project_base_name}}")
           echo -------------
           echo "versions:"
           echo "$versions"
@@ -60,7 +60,7 @@ jobs:
           
           default_branch=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
           
-          branches=$($SCRIPT_PATH/conv_proj_version_to_branch $default_branch $versions)
+          branches=$($SCRIPT_PATH/conv-proj-version-to-branch $default_branch $versions)
           # Remove the base branch from the list because the target change is already merged to the branch.
           branches=$(echo "$branches" | sed "/^${{ github.base_ref }}$/d")
           echo -------------
@@ -68,7 +68,7 @@ jobs:
           echo "$branches"
           echo -------------
 
-          $SCRIPT_PATH/create_pull_requests \
+          $SCRIPT_PATH/create-pull-requests \
             "${{ github.event.number }}" \
             "${{ github.event.pull_request.html_url }}" \
             "$PR_TITLE" \
