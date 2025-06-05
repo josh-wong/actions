@@ -73,7 +73,7 @@ function create_pr(){
 
 	gh pr create --assignee $assignee \
 				 --base "$branch" \
-				 --title "Backport to branch ($branch) : $pull_request_title" \
+				 --title "Backport to branch ($branch): $pull_request_title" \
 				 --body "${body}" \
 				 $other_options
 }
