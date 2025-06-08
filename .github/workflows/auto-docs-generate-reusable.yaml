@@ -20,7 +20,7 @@ on:
 
 jobs:
   generate_documentation:
-    if: contains(github.event.pull_request.labels.*.name, 'new feature') && github.event.pull_request.merged == true
+    if: contains(github.event.pull_request.labels.*.name, 'new feature') && github.event.pull_request.merged == true && !startsWith(github.event.pull_request.title, 'Auto-generated docs for new feature:')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout auto-docs scripts
