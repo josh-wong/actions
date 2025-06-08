@@ -1,4 +1,4 @@
-name: Generate documentation for new features
+name: 📄 Generate documentation for new features
 
 on:
   pull_request:
