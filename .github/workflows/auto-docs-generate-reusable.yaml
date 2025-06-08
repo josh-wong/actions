@@ -1,0 +1,87 @@
+name: Auto-docs generation reusable action
+
+on:
+  workflow_call:
+    inputs:
+      output_dir:
+        required: false
+        type: string
+        default: 'docs/auto-generated'
+        description: 'Directory where the generated documentation will be saved'
+      file_extension:
+        required: false
+        type: string
+        default: 'mdx'
+        description: 'File extension for the generated documentation file (e.g., md, mdx)'
+    secrets:
+      CLAUDE_API_KEY_ACTION_AUTO_DOCS:
+        required: true
+        description: 'API key for Claude AI'
+
+jobs:
+  generate_documentation:
+    if: contains(github.event.pull_request.labels.*.name, 'new feature') && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout auto-docs scripts
+        uses: actions/checkout@v4
+        with:
+          repository: josh-wong/actions
+          sparse-checkout: auto-docs-script
+          ref: main
+          path: auto-docs
+
+      - name: Checkout the target repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: repo
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install anthropic==0.16.0 requests
+          pip list
+      
+      - name: Generate Documentation
+        working-directory: repo
+        env:
+          SCRIPT_PATH: ../auto-docs/auto-docs-script
+          CLAUDE_API_KEY_ACTION_AUTO_DOCS: ${{ secrets.CLAUDE_API_KEY_ACTION_AUTO_DOCS }}
+          OUTPUT_DIR: ${{ inputs.output_dir }}
+          FILE_EXTENSION: ${{ inputs.file_extension }}
+        run: |
+          # Create output directory if it doesn't exist
+          mkdir -p $OUTPUT_DIR
+          
+          # Run the documentation generation script
+          python $SCRIPT_PATH/generate_docs.py \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --pr-url "${{ github.event.pull_request.html_url }}" \
+            --pr-title "${{ github.event.pull_request.title }}" \
+            --pr-body "${{ github.event.pull_request.body }}" \
+            --repo "${{ github.repository }}" \
+            --output-dir "$OUTPUT_DIR" \
+            --file-extension "$FILE_EXTENSION"
+
+      - name: Create Pull Request with Documentation
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: repo
+          commit-message: "docs: auto-generated documentation for PR #${{ github.event.pull_request.number }}"
+          title: "Auto-generated docs for feature: ${{ github.event.pull_request.title }}"
+          body: |
+            This PR contains auto-generated documentation for the new feature introduced in PR #${{ github.event.pull_request.number }}.
+            
+            Original PR: ${{ github.event.pull_request.html_url }}
+            
+            Please review and edit the documentation as needed before publishing.
+          branch: auto-docs-pr-${{ github.event.pull_request.number }}
+          draft: true
