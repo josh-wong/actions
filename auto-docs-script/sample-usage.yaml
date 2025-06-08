@@ -1,0 +1,17 @@
+name: Generate Documentation for New Features
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main # Or your default branch.
+
+jobs:
+  generate-docs:
+    if: github.event.pull_request.merged == true
+    uses: josh-wong/actions/.github/workflows/auto-docs-generate-reusable.yaml@main
+    with:
+      output_dir: 'docs/auto-generated' # Optional. Defaults to docs/auto-generated.
+      file_extension: 'mdx' # Optional. Defaults to .mdx.
+    secrets:
+      CLAUDE_API_KEY_ACTION_AUTO_DOCS: ${{ secrets.CLAUDE_API_KEY_ACTION_AUTO_DOCS }}
