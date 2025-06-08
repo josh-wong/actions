@@ -143,7 +143,8 @@ def main():
     
     # Add frontmatter to the content
     frontmatter = f"""---
-tags: ["New feature"]
+tags: 
+  - New feature
 ---
 
 """
