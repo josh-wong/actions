@@ -35,7 +35,7 @@ jobs:
     secrets:
       CLAUDE_API_KEY_ACTION_AUTO_DOCS: ${{ secrets.CLAUDE_API_KEY_ACTION_AUTO_DOCS }}
     env:
-      GH_TOKEN: ${{ secrets.github.token }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Prerequisites
