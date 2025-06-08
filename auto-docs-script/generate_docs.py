@@ -17,7 +17,7 @@ import subprocess
 def get_pr_diff(repo, pr_number):
     """Get the content of the PR as a diff."""
     try:
-        # Use GitHub CLI to get diff
+        # Use GitHub CLI to get diff.
         result = subprocess.run(
             ["gh", "pr", "diff", str(pr_number)],
             capture_output=True,
@@ -55,7 +55,7 @@ def generate_documentation(pr_data, diff_content, files_changed):
 
     client = anthropic.Anthropic(api_key=api_key)
     
-    # Construct the prompt for Claude
+    # Construct the prompt for Claude.
     prompt = f"""
 You are a technical writer creating documentation for a new feature that was just merged into a software project.
 
@@ -89,7 +89,7 @@ Make the headings use sentence-style capitalization (e.g., "How to use this feat
 Never stack headings. There should be no headings that are not followed by content.
 """
 
-    # Call Claude API
+    # Call the Claude API.
     try:
         response = client.messages.create(
             model="claude-3-5-haiku-latest",
@@ -124,28 +124,28 @@ def main():
         'body': args.pr_body
     }
     
-    # Get PR content
+    # Get PR content.
     diff_content = get_pr_diff(args.repo, args.pr_number)
     files_changed = get_pr_files(args.repo, args.pr_number)
     
-    # Generate documentation
+    # Generate documentation.
     doc_content = generate_documentation(pr_data, diff_content, files_changed)
     
     if not doc_content:
         print("Failed to generate documentation.")
         sys.exit(1)
     
-    # Sanitize title for filename
+    # Sanitize title for filename.
     safe_title = args.pr_title.lower().replace(' ', '-')
     safe_title = ''.join(c for c in safe_title if c.isalnum() or c == '-')
-      # Create output filename
+    # Create output filename.
     filename = f"{safe_title}.{args.file_extension}"
     output_path = os.path.join(args.output_dir, filename)
     
-    # Make sure the output directory exists
+    # Make sure the output directory exists.
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     
-    # Add frontmatter to the content
+    # Add frontmatter to the content.
     frontmatter = f"""---
 tags: 
   - New feature
