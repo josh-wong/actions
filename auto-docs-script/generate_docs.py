@@ -60,6 +60,7 @@ def generate_documentation(pr_data, diff_content, files_changed):
 You are a technical writer creating documentation for a new feature that was just merged into a software project.
 
 Here is information about the feature from the pull request:
+
 - Title: {pr_data['title']}
 - Description: {pr_data['body']}
 - PR URL: {pr_data['url']}
@@ -82,6 +83,10 @@ Based on this information, generate comprehensive documentation for this new fea
 6. Related features or components - How this feature interacts with other parts of the system
 
 Format the documentation by using proper Markdown syntax with clear headings, code blocks, tables, etc. and by using Markdown best practices.
+
+Make the headings use sentence-style capitalization (e.g., "How to use this feature" instead of "How to Use This Feature" and "HOW TO USE THIS FEATURE"). 
+
+Never stack headings. There should be no headings that are not followed by content.
 """
 
     # Call Claude API
@@ -135,8 +140,7 @@ def main():
     safe_title = ''.join(c for c in safe_title if c.isalnum() or c == '-')
     
     # Create output filename
-    today = datetime.datetime.now().strftime('%Y-%m-%d')
-    filename = f"{today}-{safe_title}.{args.file_extension}"
+    filename = f"-{safe_title}"
     output_path = os.path.join(args.output_dir, filename)
     
     # Make sure the output directory exists
@@ -144,7 +148,8 @@ def main():
     
     # Add frontmatter to the content
     frontmatter = f"""---
-tags: ["New feature"]
+tags: 
+  - New feature
 ---
 
 """

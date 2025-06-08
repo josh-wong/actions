@@ -76,11 +76,11 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           path: repo
           commit-message: "docs: auto-generated documentation for PR #${{ github.event.pull_request.number }}"
-          title: "Auto-generated docs for feature: ${{ github.event.pull_request.title }}"
+          title: "Auto-generated docs for new feature: ${{ github.event.pull_request.title }}"
           body: |
             This PR contains auto-generated documentation for the new feature introduced in PR #${{ github.event.pull_request.number }}.
             
-            Original PR: ${{ github.event.pull_request.html_url }}
+            - Original PR: ${{ github.event.pull_request.html_url }}
             
             Please review and edit the documentation as needed before publishing.
           branch: auto-docs-pr-${{ github.event.pull_request.number }}

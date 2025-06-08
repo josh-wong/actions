@@ -27,15 +27,13 @@ on:
 
 jobs:
   generate-docs:
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     uses: josh-wong/actions/.github/workflows/auto-docs-generate-reusable.yaml@main
     with:
       output_dir: 'docs/auto-generated' # Optional. Defaults to docs/auto-generated.
       file_extension: 'mdx' # Optional. Defaults to .mdx.
     secrets:
       CLAUDE_API_KEY_ACTION_AUTO_DOCS: ${{ secrets.CLAUDE_API_KEY_ACTION_AUTO_DOCS }}
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ## Prerequisites
