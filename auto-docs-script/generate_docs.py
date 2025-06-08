@@ -138,9 +138,8 @@ def main():
     # Sanitize title for filename
     safe_title = args.pr_title.lower().replace(' ', '-')
     safe_title = ''.join(c for c in safe_title if c.isalnum() or c == '-')
-    
-    # Create output filename
-    filename = f"{safe_title}"
+      # Create output filename
+    filename = f"{safe_title}.{args.file_extension}"
     output_path = os.path.join(args.output_dir, filename)
     
     # Make sure the output directory exists
