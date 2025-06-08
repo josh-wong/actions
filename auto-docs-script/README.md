@@ -16,13 +16,14 @@ The auto-docs-generate-reusable.yaml workflow:
 To use this workflow in your repository, create a new workflow file in your repo with the following content:
 
 ```yaml
-name: Generate Documentation for New Features
+name: Generate documentation for new features
 
 on:
   pull_request:
     types: [closed]
     branches:
       - main # Or your default branch.
+  workflow_dispatch:
 
 jobs:
   generate-docs:
@@ -33,6 +34,8 @@ jobs:
       file_extension: 'mdx' # Optional. Defaults to .mdx.
     secrets:
       CLAUDE_API_KEY_ACTION_AUTO_DOCS: ${{ secrets.CLAUDE_API_KEY_ACTION_AUTO_DOCS }}
+    env:
+      GH_TOKEN: ${{ secrets.github.token }}
 ```
 
 ## Prerequisites
