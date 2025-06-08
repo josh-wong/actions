@@ -48,7 +48,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install anthropic requests
           pip list
-      
+
       - name: Generate documentation
         working-directory: repo
         env:
@@ -84,4 +84,7 @@ jobs:
             
             Please review and edit the documentation as needed before publishing.
           branch: auto-docs-pr-${{ github.event.pull_request.number }}
+          labels: |
+            documentation
+            new feature
           draft: true
