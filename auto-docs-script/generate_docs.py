@@ -135,8 +135,7 @@ def main():
     safe_title = ''.join(c for c in safe_title if c.isalnum() or c == '-')
     
     # Create output filename
-    today = datetime.datetime.now().strftime('%Y-%m-%d')
-    filename = f"{today}-{safe_title}.{args.file_extension}"
+    filename = f"-{safe_title}"
     output_path = os.path.join(args.output_dir, filename)
     
     # Make sure the output directory exists
