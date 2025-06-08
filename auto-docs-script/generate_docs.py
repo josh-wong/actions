@@ -84,7 +84,7 @@ Based on this information, generate comprehensive documentation for this new fea
 
 Format the documentation by using proper Markdown syntax with clear headings, code blocks, tables, etc. and by using Markdown best practices.
 
-Make the headings use sentence-style capitalization (e.g., "How to use this feature" instead of "How to Use This Feature" and "HOW TO USE THIS FEATURE"). 
+Make the headings use sentence-style capitalization (e.g., "How to use this feature" instead of "How to Use This Feature" and "HOW TO USE THIS FEATURE"). Do NOT capitalize the first letter of each word in headings.
 
 Never stack headings. There should be no headings that are not followed by content.
 """
