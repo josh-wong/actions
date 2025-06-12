@@ -36,7 +36,7 @@ jobs:
         run: |
           mkdir translated
           for file in ${{ steps.changes.outputs.files }}; do
-            python translate-docs.py "$file"
+            python auto-translate.py "$file"
           done
 
       - name: Get English PR title
