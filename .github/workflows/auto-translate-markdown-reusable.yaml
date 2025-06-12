@@ -67,11 +67,11 @@ jobs:
           git config user.email "github-actions@github.com"
           git checkout -b $BRANCH
           git add docs/ja-jp
-          git commit -m "Translate docs to Japanese"
+          git commit -m "Translate doc to Japanese"
           git push origin $BRANCH
 
           PR_TITLE="[Japanese] ${{ steps.get_pr_title.outputs.title }}"
           gh pr create --title "$PR_TITLE" \
-                       --body "Automated translation of updated English docs" \
+                       --body "Automated translation of new English doc" \
                        --base ${{ github.ref_name }} \
                        --head $BRANCH
