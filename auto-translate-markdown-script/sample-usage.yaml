@@ -7,6 +7,16 @@ on:
       - main
       - '**' # This allows the workflow to run on any branch. This can be changed to allow the workflow to run only on specific branches, like '1*', which would make the workflow run on branches named 1, 1.2, 1.2.3, etc.
   workflow_dispatch:
+    inputs:
+      specific_files:
+        description: 'Comma-separated list of specific files to translate (relative to repo root)'
+        required: false
+        type: string
+      translate_all:
+        description: 'Translate all files in source directory'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   translate-docs:
@@ -15,5 +25,8 @@ jobs:
     with:
       output_dir: 'docs/ja-jp'
       file_extension: 'mdx'
+      source_dir: 'docs/en-us'
+      specific_files: ${{ github.event.inputs.specific_files }}
+      translate_all: ${{ github.event.inputs.translate_all || false }}
     secrets:
       OPENAI_API_KEY_ACTION_TRANSLATE_DOCS: ${{ secrets.OPENAI_API_KEY_ACTION_TRANSLATE_DOCS }} # Required. Your OpenAI API key for translation. Make sure to set this secret in your repository settings.
