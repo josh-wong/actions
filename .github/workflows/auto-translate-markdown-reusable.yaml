@@ -1,12 +1,22 @@
 name: Auto-translate Markdown docs from English to Japanese
 
 on:
-  push:
-    branches:
-      - main
-      - '**' # This allows the workflow to run on any branch. This can be changed to allow the workflow to run only on specific branches, like '1*', which would make the workflow run on branches named 1, 1.2, 1.2.3, etc.
-    paths:
-      - 'docs/en-us/**'
+  workflow_call:
+    inputs:
+      output_dir:
+        required: false
+        type: string
+        default: 'docs/ja-jp'
+        description: 'Directory where the generated translation will be saved'
+      file_extension:
+        required: false
+        type: string
+        default: 'mdx'
+        description: 'File extension for the generated documentation file (e.g., md, mdx)'
+    secrets:
+      OPENAI_API_KEY_ACTION_TRANSLATE_DOCS:
+        required: true
+        description: 'API key for OpenAI'
 
 jobs:
   translate:
