@@ -41,99 +41,15 @@ jobs:
         run: |
           echo "files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'docs/en-us/' | tr '\n' ' ')" >> $GITHUB_OUTPUT
 
-      - name: Create translation script
-        run: |
-          cat > auto-translate.py << 'EOL'
-          import os
-          import sys
-          import openai
-          import re
-
-          # Set API key from environment
-          openai.api_key = os.environ.get("OPENAI_API_KEY_ACTION_TRANSLATE_DOCS")
-
-          def translate_markdown_to_japanese(content):
-              response = openai.ChatCompletion.create(
-                  model="gpt-4",
-                  messages=[
-                      {"role": "system", "content": "You are a professional translator specializing in technical documentation. Translate the following markdown content from English to Japanese. Maintain all markdown formatting, code blocks, and links."},
-                      {"role": "user", "content": content}
-                  ],
-                  max_tokens=4000,
-                  temperature=0.1
-              )
-              return response.choices[0].message['content']
-
-          def process_file(input_path):
-              output_dir = os.environ.get("OUTPUT_DIR", "docs/ja-jp")
-              file_ext = os.environ.get("FILE_EXTENSION", "mdx")
-
-              # Create the output directory structure
-              rel_path = os.path.relpath(input_path, "docs/en-us")
-              output_path = os.path.join(output_dir, rel_path)
-
-              # Make sure the output directory exists
-              os.makedirs(os.path.dirname(output_path), exist_ok=True)
-
-              # Change extension if needed
-              if file_ext != "md":
-                  base, _ = os.path.splitext(output_path)
-                  output_path = f"{base}.{file_ext}"
-
-              print(f"Translating {input_path} to {output_path}")
-
-              try:
-                  with open(input_path, 'r', encoding='utf-8') as file:
-                      content = file.read()
-
-                  translated_content = translate_markdown_to_japanese(content)
-
-                  with open(output_path, 'w', encoding='utf-8') as file:
-                      file.write(translated_content)
-
-                  print(f"Successfully translated and saved to {output_path}")
-
-              except Exception as e:
-                  print(f"Error processing {input_path}: {e}")
-                  sys.exit(1)
-
-          if __name__ == "__main__":
-              if len(sys.argv) < 2:
-                  print("Usage: python auto-translate.py <input_file>")
-                  sys.exit(1)
-
-              process_file(sys.argv[1])
-          EOL
-
       - name: Translate updated files
         if: steps.changes.outputs.files != ''
-        env:
-          OPENAI_API_KEY_ACTION_TRANSLATE_DOCS: ${{ secrets.OPENAI_API_KEY_ACTION_TRANSLATE_DOCS }}
-          OUTPUT_DIR: ${{ inputs.output_dir }}
-          FILE_EXTENSION: ${{ inputs.file_extension }}
         run: |
-          # Ensure output directory exists
-          mkdir -p ${{ inputs.output_dir }}
-
-          # Process each changed file
+          mkdir translated
           for file in ${{ steps.changes.outputs.files }}; do
-            if [[ -f "$file" ]]; then
-              python auto-translate.py "$file"
-            fi
+            python auto-translate.py "$file"
           done
 
-      - name: Check for changes
-        id: check_changes
-        run: |
-          git add ${{ inputs.output_dir }}
-          if git diff --staged --quiet; then
-            echo "changes=false" >> $GITHUB_OUTPUT
-          else
-            echo "changes=true" >> $GITHUB_OUTPUT
-          fi
-
       - name: Get English PR title
-        if: steps.check_changes.outputs.changes == 'true'
         id: get_pr_title
         run: |
           PR_TITLE=$(gh pr view ${{ github.event.pull_request.number }} --json title -q '.title')
@@ -142,15 +58,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create PR with translated docs
-        if: steps.check_changes.outputs.changes == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY_ACTION_TRANSLATE_DOCS: ${{ secrets.OPENAI_API_KEY_ACTION_TRANSLATE_DOCS }}
         run: |
           BRANCH="translate-ja-${{ github.run_id }}"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git checkout -b $BRANCH
-          git add ${{ inputs.output_dir }}
+          git add docs/ja-jp
           git commit -m "Translate doc to Japanese"
           git push origin $BRANCH
 
@@ -159,8 +75,3 @@ jobs:
                        --body "Automated translation of new English doc" \
                        --base ${{ github.ref_name }} \
                        --head $BRANCH
-
-      - name: No changes detected
-        if: steps.check_changes.outputs.changes == 'false'
-        run: |
-          echo "No changes detected after translation. Skipping PR creation."
