@@ -1,0 +1,19 @@
+name: 📄 Translate new Markdown files from English to Japanese
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+      - '**' # This allows the workflow to run on any branch. This can be changed to allow the workflow to run only on specific branches, like '1*', which would make the workflow run on branches named 1, 1.2, 1.2.3, etc.
+  workflow_dispatch:
+
+jobs:
+  translate-docs:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    uses: josh-wong/actions/.github/workflows/auto-translate-markdown-reusable.yaml@main
+    with:
+      output_dir: 'docs/ja-jp'
+      file_extension: 'mdx'
+    secrets:
+      OPENAI_API_KEY_ACTION_TRANSLATE_DOCS: ${{ secrets.OPENAI_API_KEY_ACTION_TRANSLATE_DOCS }} # Required. Your OpenAI API key for translation. Make sure to set this secret in your repository settings.
