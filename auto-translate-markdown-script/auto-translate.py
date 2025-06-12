@@ -1,9 +1,9 @@
 import os
+import openai
 import sys
 from pathlib import Path
-from openai import OpenAI
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY_ACTION_TRANSLATE_DOCS"))
+openai.api_key = os.getenv("OPENAI_API_KEY_ACTION_TRANSLATE_DOCS")
 
 def translate_file(source_path, output_dir, file_extension=None):
     with open(source_path, "r", encoding="utf-8") as f:
@@ -12,12 +12,12 @@ def translate_file(source_path, output_dir, file_extension=None):
     prompt = f"Translate the following Markdown documentation from English to Japanese:\n\n{content}"
 
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
         )
-        translation = response.choices[0].message.content
+        translation = response['choices'][0]['message']['content']
 
         # Get the relative path from source_path
         source_rel_path = Path(source_path).name
