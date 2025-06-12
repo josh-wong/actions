@@ -1,4 +1,4 @@
-name: Translate English docs to Japanese
+name: Auto-translate Markdown docs from English to Japanese
 
 on:
   push:
