@@ -13,6 +13,21 @@ on:
         type: string
         default: 'mdx'
         description: 'File extension for the generated documentation file (e.g., md, mdx)'
+      source_dir:
+        required: false
+        type: string
+        default: 'docs/en-us'
+        description: 'Source directory containing English documents'
+      specific_files:
+        required: false
+        type: string
+        default: ''
+        description: 'Comma-separated list of specific files to translate (relative to repo root)'
+      translate_all:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether to translate all files in the source directory'
     secrets:
       OPENAI_API_KEY_ACTION_TRANSLATE_DOCS:
         required: true
@@ -36,20 +51,59 @@ jobs:
       - name: Install dependencies
         run: pip install openai
 
-      - name: Get changed files
-        id: changes
+      - name: Get files to translate based on inputs
+        id: get_files
         run: |
-          echo "files=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'docs/en-us/' | tr '\n' ' ')" >> $GITHUB_OUTPUT
+          # Priority 1: Specific files specified in inputs
+          if [[ -n "${{ inputs.specific_files }}" ]]; then
+            echo "Using specifically listed files"
+            echo "files=${{ inputs.specific_files }}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
-      - name: Translate updated files
-        if: steps.changes.outputs.files != ''
+          # Priority 2: All files in source directory if translate_all is true
+          if [[ "${{ inputs.translate_all }}" == "true" ]]; then
+            echo "Translating all files in ${{ inputs.source_dir }}"
+            FILES=$(find ${{ inputs.source_dir }} -type f -name "*.md*" | tr '\n' ' ')
+            echo "files=${FILES}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Priority 3: Changed files in pull request
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "Getting changed files from pull request"
+            CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} -- '${{ inputs.source_dir }}/' | tr '\n' ' ')
+            echo "files=${CHANGED}" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Priority 4: Recently changed files on the branch (last commit)
+          echo "Getting changed files from last commit"
+          if [[ -n "${{ github.event.before }}" ]]; then
+            COMP_SHA="${{ github.event.before }}"
+          else
+            # Use HEAD^ if not workflow_dispatch
+            COMP_SHA="HEAD^"
+          fi
+          CHANGED=$(git diff --name-only ${COMP_SHA} HEAD -- '${{ inputs.source_dir }}/' | tr '\n' ' ')
+          echo "files=${CHANGED}" >> $GITHUB_OUTPUT
+
+      - name: List files to translate
+        run: |
+          echo "Files to translate:"
+          for file in ${{ steps.get_files.outputs.files }}; do
+            echo "- $file"
+          done
+
+      - name: Translate files
+        if: steps.get_files.outputs.files != ''
         env:
           OPENAI_API_KEY_ACTION_TRANSLATE_DOCS: ${{ secrets.OPENAI_API_KEY_ACTION_TRANSLATE_DOCS }}
           OUTPUT_DIR: ${{ inputs.output_dir }}
           FILE_EXTENSION: ${{ inputs.file_extension }}
         run: |
           mkdir -p ${{ inputs.output_dir }}
-          for file in ${{ steps.changes.outputs.files }}; do
+          for file in ${{ steps.get_files.outputs.files }}; do
             echo "Translating $file"
             python auto-translate-markdown-script/auto-translate.py "$file" "${{ inputs.output_dir }}" "${{ inputs.file_extension }}"
           done
@@ -57,7 +111,11 @@ jobs:
       - name: Debug - List translated files
         run: |
           echo "Contents of ${{ inputs.output_dir }}:"
-          ls -la ${{ inputs.output_dir }}
+          if [ -d "${{ inputs.output_dir }}" ]; then
+            find "${{ inputs.output_dir }}" -type f -name "*.${{ inputs.file_extension }}" | sort
+          else
+            echo "Output directory does not exist"
+          fi
 
       - name: Get English PR title
         id: get_pr_title
