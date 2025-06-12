@@ -3,7 +3,7 @@ import openai
 import sys
 from pathlib import Path
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_key = os.getenv("OPENAI_API_KEY_ACTION_TRANSLATE_DOCS")
 
 def translate_file(source_path, target_path):
     with open(source_path, "r", encoding="utf-8") as f:
