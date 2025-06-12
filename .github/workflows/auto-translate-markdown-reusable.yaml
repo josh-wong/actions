@@ -43,6 +43,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout translation script repository
+        uses: actions/checkout@v3
+        with:
+          repository: josh-wong/actions
+          path: auto-translate-markdown-script
+
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
