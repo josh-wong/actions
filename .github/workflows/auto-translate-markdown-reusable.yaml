@@ -43,14 +43,25 @@ jobs:
 
       - name: Translate updated files
         if: steps.changes.outputs.files != ''
+        env:
+          OPENAI_API_KEY_ACTION_TRANSLATE_DOCS: ${{ secrets.OPENAI_API_KEY_ACTION_TRANSLATE_DOCS }}
+          OUTPUT_DIR: ${{ inputs.output_dir }}
+          FILE_EXTENSION: ${{ inputs.file_extension }}
         run: |
-          mkdir translated
+          mkdir -p ${{ inputs.output_dir }}
           for file in ${{ steps.changes.outputs.files }}; do
-            python auto-translate.py "$file"
+            echo "Translating $file"
+            python auto-translate-markdown-script/auto-translate.py "$file" "${{ inputs.output_dir }}" "${{ inputs.file_extension }}"
           done
+
+      - name: Debug - List translated files
+        run: |
+          echo "Contents of ${{ inputs.output_dir }}:"
+          ls -la ${{ inputs.output_dir }}
 
       - name: Get English PR title
         id: get_pr_title
+        if: github.event_name == 'pull_request'
         run: |
           PR_TITLE=$(gh pr view ${{ github.event.pull_request.number }} --json title -q '.title')
           echo "title=${PR_TITLE}" >> $GITHUB_OUTPUT
@@ -60,18 +71,28 @@ jobs:
       - name: Create PR with translated docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OPENAI_API_KEY_ACTION_TRANSLATE_DOCS: ${{ secrets.OPENAI_API_KEY_ACTION_TRANSLATE_DOCS }}
         run: |
           BRANCH="translate-ja-${{ github.run_id }}"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git checkout -b $BRANCH
-          git add docs/ja-jp
-          git commit -m "Translate doc to Japanese"
-          git push origin $BRANCH
+          git add ${{ inputs.output_dir }}
+          # Only commit and create PR if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          else
+            git commit -m "Translate doc to Japanese"
+            git push origin $BRANCH
 
-          PR_TITLE="[Japanese] ${{ steps.get_pr_title.outputs.title }}"
-          gh pr create --title "$PR_TITLE" \
-                       --body "Automated translation of new English doc" \
-                       --base ${{ github.ref_name }} \
-                       --head $BRANCH
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              PR_TITLE="[Japanese] ${{ steps.get_pr_title.outputs.title }}"
+            else
+              PR_TITLE="[Japanese] Translation update"
+            fi
+
+            gh pr create --title "$PR_TITLE" \
+                        --body "Automated translation of new English doc" \
+                        --base ${{ github.ref_name }} \
+                        --head $BRANCH
+          fi
