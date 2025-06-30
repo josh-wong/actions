@@ -305,5 +305,5 @@ The following are my opinions and observations when using Claude to create this 
   - Because of this, a lot of time was spent troubleshooting.
   - Even though tests were included, the action didn't work when run in another repository. (Consistently ran into an invalid secret for `GITHUB_TOKEN`.)-
 - Using Claude Code adds an extra layer (a lot of scripts) that seems to make it unnecessarily more complex compared to just using the API directly.
-  - The OpenAI version of this workflow, which calls the API directly, works as expected.
+  - The Claude direct API version of this workflow, which calls the API directly, works as expected.
 - Incorrect paths (`.actions`)
