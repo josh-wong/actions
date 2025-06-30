@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: josh-wong/actions
-          path: /
+          path: translation-tools
           
       - uses: actions/setup-node@v4
         with:
