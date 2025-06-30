@@ -2,6 +2,21 @@
 
 This GitHub Actions workflow automatically translates newly merged English Markdown files (`.md`/`.mdx`) to Japanese, creating a pull request with the translated content in the target repository.
 
+<details>
+<summary>Initial prompt</summary>
+<p>When someone in a repository merges a new Markdown (.md or .mdx) file in English, I want the contents of that file to be translated to Japanese.</p>
+
+<p>Details: When a user merges a PR that includes English docs in a different repository, I want to create a workflow action to run that translates new Markdown (.md or .mdx) in English to Japanese. I then want the workflow to create a branch in the target repository in the format "<ORIGINAL_BRANCH_NAME>-ja-jp", use Claude Code to translate the contents to Japanese, create a PR, add the label "documentation" to the PR, request a review from the same people who reviewed the PR that contained the English doc, add the same person who created the PR with the English doc as the assignee, and select the same projects that were selected in the PR with the English doc.</p>
+
+<p>In the Markdown file that contains the Japanese translation, note the following:</p>
+
+- Only the "displayed_sidebar" value in the front matter properties should be changed (from docsEnglish" to "docsJapanese").
+- Any anchor link paths to headings must match the headings in the Japanese docs (to avoid broken anchor links).
+- Below the title, the following translation banner must be added:
+
+<p>Before starting work on this, can you please confirm your understanding and create a Markdown-based design doc?</p>
+</details>
+
 ## Workflow trigger
 
 The workflow triggers on:
@@ -291,3 +306,4 @@ The following are my opinions and observations when using Claude to create this 
   - Even though tests were included, the action didn't work when run in another repository. (Consistently ran into an invalid secret for `GITHUB_TOKEN`.)-
 - Using Claude Code adds an extra layer (a lot of scripts) that seems to make it unnecessarily more complex compared to just using the API directly.
   - The OpenAI version of this workflow, which calls the API directly, works as expected.
+- Incorrect paths (`.actions`)
