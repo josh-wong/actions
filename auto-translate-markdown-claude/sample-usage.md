@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: josh-wong/actions
-          path: .actions
+          path: /
           
       - uses: actions/setup-node@v4
         with:
@@ -75,7 +75,7 @@ jobs:
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           REPOSITORY_NAME: ${{ github.event.repository.name }}
         run: |
-          cd .actions/auto-translate-markdown-claude
+          cd auto-translate-markdown-claude
           npm install
           npm install -g @anthropic-ai/claude-code
           node scripts/translate-markdown.js
