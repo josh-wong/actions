@@ -288,4 +288,6 @@ The following are my opinions and observations when using Claude to create this 
 
 - Struggles with understanding how different environments (in this case, repositories) should interact with one another.
   - Because of this, a lot of time was spent troubleshooting.
-  - Even though tests were included, the action didn't work when run in another repository. (Consistently ran into an invalid secret for `GITHUB_TOKEN`.)
+  - Even though tests were included, the action didn't work when run in another repository. (Consistently ran into an invalid secret for `GITHUB_TOKEN`.)-
+- Using Claude Code adds an additional layer that seems to make it slightly more complex compared to just using the API directly.
+  - The OpenAI version of this workflow, which calls the API directly, works as expected.
