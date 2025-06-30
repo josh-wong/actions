@@ -24,8 +24,7 @@ jobs:
     uses: josh-wong/actions/.github/workflows/auto-translate-markdown-claude-reusable.yml@main
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      # Note: Do NOT use "secrets: inherit" as it will cause conflicts
-      # Only ANTHROPIC_API_KEY needs to be explicitly passed
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### Alternative: Self-contained workflow
@@ -47,22 +46,22 @@ jobs:
   translate-markdown:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - uses: actions/checkout@v4
         with:
           repository: josh-wong/actions
-          path: translation-tools
-          
+          path: repo
+
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-      
+
       - name: Run translation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -84,11 +83,13 @@ jobs:
 ## Usage Options
 
 ### Option 1: Reusable Workflow (Recommended)
+
 - ✅ **Easier to maintain**: Updates happen automatically when the source workflow is updated
 - ✅ **Cleaner**: Minimal configuration in your repository
 - ✅ **Centralized**: All logic stays in the actions repository
 
 ### Option 2: Self-contained Workflow
+
 - ✅ **Full control**: You can modify the workflow for your specific needs
 - ✅ **No dependencies**: Works even if the source repository is unavailable
 - ❌ **Maintenance overhead**: You need to manually update when improvements are made
@@ -100,6 +101,7 @@ jobs:
 **Problem**: Using `secrets: inherit` in the calling workflow.
 
 **Solution**: Use explicit secret mapping instead:
+
 ```yaml
 # ❌ DON'T use this:
 secrets: inherit
@@ -116,6 +118,7 @@ secrets:
 **Problem**: Incorrect secret configuration.
 
 **Solution**: Ensure you only pass the `ANTHROPIC_API_KEY` secret:
+
 ```yaml
 jobs:
   translate-markdown:
@@ -145,7 +148,6 @@ jobs:
     uses: josh-wong/actions/.github/workflows/auto-translate-markdown-claude-reusable.yml@main
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-```
 ```
 
 ## Advanced Configuration
