@@ -267,6 +267,25 @@ README.md                          # Usage documentation
 - Anchor link fixing
 
 ### Phase 4: Polish and testing
+
 - Error handling improvements
 - Comprehensive testing
 - Documentation and examples
+
+## Opinions
+
+The following are my opinions and observations when using Claude to create this workflow.
+
+### Pros
+
+- Great for:
+  - Having something to start with.
+  - Formulating ideas.
+  - Filling in gaps that weren't considered early in the design process, like for testing.
+- Responses are detailed and easy to understand why specific changes are made.
+
+### Cons
+
+- Struggles with understanding how different environments (in this case, repositories) should interact with one another.
+  - Because of this, a lot of time was spent troubleshooting.
+  - Even though tests were included, the action didn't work when run in another repository. (Consistently ran into an invalid secret for `GITHUB_TOKEN`.)
