@@ -1,0 +1,19 @@
+# .github/workflows/auto-translate-markdown.yml
+name: Auto-Translate Markdown to Japanese
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - 'docs/en-us/**/*.md'
+      - 'docs/en-us/**/*.mdx'
+  workflow_dispatch:  # Allows manual triggering for testing
+
+jobs:
+  translate-markdown:
+    if: github.event.pull_request.merged == true
+    uses: josh-wong/actions/.github/workflows/auto-translate-markdown-claude-reusable.yml@main
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      # Note: Do NOT use "secrets: inherit" as it will cause conflicts
+      # Only ANTHROPIC_API_KEY needs to be explicitly passed
