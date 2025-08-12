@@ -6,6 +6,29 @@ class ClaudeCodeTranslator {
   constructor() {
     this.maxRetries = 3;
     this.retryDelay = 1000; // 1 second
+    this.authInitialized = false;
+  }
+
+  async ensureClaudeAuth() {
+    if (this.authInitialized) {
+      return;
+    }
+
+    try {
+      // Check if Claude CLI is available and authenticated
+      execSync('claude --version', { stdio: 'pipe' });
+      
+      // If we have an API key, ensure it's set
+      if (process.env.ANTHROPIC_API_KEY) {
+        // Claude CLI can use ANTHROPIC_API_KEY environment variable
+        console.log('✅ Claude CLI authenticated via environment variable');
+        this.authInitialized = true;
+      } else {
+        throw new Error('ANTHROPIC_API_KEY environment variable not set');
+      }
+    } catch (error) {
+      throw new Error(`Claude CLI not available or not authenticated: ${error.message}`);
+    }
   }
 
   async translateMarkdown(content, filePath) {
@@ -57,12 +80,15 @@ Return only the translated markdown:`;
 
   async callClaudeCode(prompt) {
     try {
+      // Ensure Claude is authenticated
+      await this.ensureClaudeAuth();
+      
       // Create a temporary file for the prompt to avoid command line length limits
       const tempFile = path.join(process.cwd(), '.translation-prompt.txt');
       await fs.writeFile(tempFile, prompt, 'utf8');
       
-      // Call Claude Code with the prompt file
-      const command = `cat "${tempFile}" | claude -p --output-format json --max-turns 1 --dangerously-skip-permissions`;
+      // Call Claude Code with the prompt file and API key
+      const command = `ANTHROPIC_API_KEY="${process.env.ANTHROPIC_API_KEY}" cat "${tempFile}" | claude -p --output-format json --max-turns 1 --dangerously-skip-permissions`;
       
       console.log('🤖 Calling Claude Code...');
       const output = execSync(command, { 

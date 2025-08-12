@@ -41,8 +41,12 @@ jobs:
           cd auto-translate-markdown-claude
           npm install
 
-      - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
+      - name: Install Claude CLI
+        run: |
+          # Install Claude CLI globally
+          npm install -g @anthropic-ai/claude-code
+          # Verify installation
+          claude --version
 
       - name: Configure Git
         run: |
