@@ -65,8 +65,9 @@ jobs:
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           REPOSITORY_NAME: ${{ github.event.repository.name }}
         run: |
-          cd repo/auto-translate-markdown-claude
-          node scripts/translate-markdown.js
+          # Run the script from the root directory where docs/ folder exists
+          # but reference the script from the repo/ directory
+          node repo/auto-translate-markdown-claude/scripts/translate-markdown.js
 
       - name: Comment on failure
         if: failure()
