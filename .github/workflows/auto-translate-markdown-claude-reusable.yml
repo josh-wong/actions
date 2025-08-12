@@ -48,6 +48,22 @@ jobs:
           # Verify installation
           claude --version
 
+      - name: Authenticate Claude CLI
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # Verify Claude CLI can access the API key
+          echo "Verifying Claude CLI authentication..."
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "❌ ANTHROPIC_API_KEY is not set"
+            exit 1
+          else
+            echo "✅ ANTHROPIC_API_KEY is available"
+          fi
+          # Test Claude CLI with a simple command
+          echo "Testing Claude CLI authentication..."
+          claude --version
+
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
