@@ -15,6 +15,4 @@ jobs:
     uses: josh-wong/actions/.github/workflows/auto-translate-markdown-claude-reusable.yml@main
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # Note: Do NOT use "secrets: inherit" as it will cause conflicts
-      # Only ANTHROPIC_API_KEY needs to be explicitly passed
+      # GITHUB_TOKEN is automatically available and doesn't need to be passed
