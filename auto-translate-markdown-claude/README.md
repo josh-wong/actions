@@ -1,33 +1,52 @@
-# Auto-translate markdown to Japanese
+# Auto-translate Markdown to Japanese
 
-Automatically translate English Markdown files to Japanese when PRs are merged, using Claude Code for high-quality translations.
+**⚠️ DEPRECATED: This directory contains the old custom CLI implementation.**
 
-## Overview
+**For the current implementation, see:** [`auto-translate-markdown-script/README.md`](../auto-translate-markdown-script/README.md)
 
-This GitHub Actions workflow automatically:
+## Current Implementation
 
-1. Detects merged PRs containing Markdown files.
-2. Translates English content to Japanese using Claude Code.
-3. Creates Japanese versions in `docs/ja-jp` directories.
-4. Opens a new PR with translations and proper metadata.
+The auto-translation functionality has been moved to use the **official Claude Code GitHub Action** with a streamlined setup:
 
-## Features
+### New Workflows Location
+- **Main Implementation**: `auto-translate-markdown-script/`
+- **Workflow Files**: `.github/workflows/auto-translate-documentation.yml` and `.github/workflows/claude-translation-assistant.yml`
 
-- **High-quality translation:** Uses Claude Code (Anthropic) for natural, technical translations.
-- **Markdown preservation:** Maintains all formatting, code blocks, and links.
-- **Front matter updates:** Automatically updates sidebar references.
-- **Translation banner:** Adds consistent translation notice.
-- **Anchor link fixing:** Updates internal links to match Japanese headings.
-- **PR metadata replication:** Copies reviewers, labels, and assignments.
-- **Error handling:** Graceful failure with detailed logging.
+### Key Improvements
+- **Official Support**: Uses Anthropic's maintained GitHub Action
+- **Better Authentication**: OIDC token exchange instead of custom CLI
+- **Simplified Setup**: Just add `ANTHROPIC_API_KEY` to repository secrets
+- **More Reliable**: Better error handling and logging
+- **Focused Workflows**: Clear separation of automatic vs manual translation
 
-## Setup
+### Migration
+If you're using the old implementation from this directory:
 
-### 1. Add repository secrets
+1. **Remove old workflows** that reference this directory
+2. **Add new workflows** from the current implementation
+3. **Update secrets**: Use `ANTHROPIC_API_KEY` instead of custom CLI tokens
+4. **Follow new setup**: See [`auto-translate-markdown-script/README.md`](../auto-translate-markdown-script/README.md)
 
-Add these secrets to your repository settings:
+## Quick Start (New Implementation)
 
-- `ANTHROPIC_API_KEY`: Your Anthropic API key for Claude Code authentication
+### Automatic Translation
+```yaml
+# Triggers when documentation PRs are merged
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - "docs/en-us/**/*.mdx"
+      - "docs/en-us/**/*.md"
+```
+
+### Manual Translation
+```bash
+# Comment on any PR or issue:
+@claude translate docs
+```
+
+**For complete setup instructions, see:** [`auto-translate-markdown-script/README.md`](../auto-translate-markdown-script/README.md)
 
 ### 2. Copy workflow files
 

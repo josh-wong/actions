@@ -1,32 +1,111 @@
-name: 📄 Translate new Markdown files from English to Japanese
+# Sample usage for Auto-Translate Documentation with Claude Code Action
+# This shows how to set up automated Japanese translation of English documentation
 
+# AUTOMATIC TRANSLATION: Runs when documentation PRs are merged
+# File: .github/workflows/auto-translate-documentation.yml
+name: Auto-Translate Documentation
 on:
   pull_request:
-    types: [closed]
-    branches:
-      - main
-      - '**' # This allows the workflow to run on any branch. This can be changed to allow the workflow to run only on specific branches, like '1*', which would make the workflow run on branches named 1, 1.2, 1.2.3, etc.
-  workflow_dispatch:
-    inputs:
-      specific_files:
-        description: 'Comma-separated list of specific files to translate (relative to repo root)'
-        required: false
-        type: string
-      translate_all:
-        description: 'Translate all files in source directory'
-        required: false
-        type: boolean
-        default: false
+    types: [closed]  # Only trigger when PR is merged
+    paths:
+      - "docs/en-us/**/*.mdx"
+      - "docs/en-us/**/*.md"
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
 
 jobs:
-  translate-docs:
-    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
-    uses: josh-wong/actions/.github/workflows/auto-translate-markdown-reusable.yaml@main
-    with:
-      output_dir: 'docs/ja-jp'
-      file_extension: 'mdx'
-      source_dir: 'docs/en-us'
-      specific_files: ${{ github.event.inputs.specific_files }}
-      translate_all: ${{ github.event.inputs.translate_all || false }}
-    secrets:
-      OPENAI_API_KEY_ACTION_TRANSLATE_DOCS: ${{ secrets.OPENAI_API_KEY_ACTION_TRANSLATE_DOCS }} # Required. Your OpenAI API key for translation. Make sure to set this secret in your repository settings.
+  auto-translate:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-translate documentation to Japanese
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # Required: Set this in repository secrets
+          direct_prompt: |
+            A documentation PR has been merged. Please translate any English documentation changes to Japanese.
+
+            ## Task:
+            1. Identify files that were changed in the merged PR in the docs/en-us/ directory
+            2. For each changed file, create or update the corresponding Japanese translation in docs/ja-jp/
+            3. Maintain the same directory structure and filename in the Japanese docs
+
+            ## Requirements:
+            - Translate all English text to natural, professional Japanese
+            - Preserve all MDX/Markdown formatting exactly (headers, lists, code blocks, links)
+            - Keep code examples, URLs, and technical terms in English
+            - Ensure proper UTF-8 encoding for Japanese characters
+            - Create docs/ja-jp/ directory structure if it doesn't exist
+
+            ## Process:
+            1. Use git to identify which files were modified in the merged PR
+            2. Read each modified English documentation file
+            3. Create high-quality Japanese translations
+            4. Save translations in docs/ja-jp/ with identical file structure
+            5. Commit the translations with a descriptive message
+
+            Please analyze the merged PR and create the necessary Japanese translations.
+
+          allowed_tools: "View,Edit,Glob,Grep,Bash(git:*),Bash(mkdir:*)"
+          timeout_minutes: 20
+
+---
+
+# MANUAL TRANSLATION: Triggered by @claude comments
+# File: .github/workflows/claude-translation-assistant.yml  
+name: Claude Manual Translation Assistant
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  claude-assistant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # Required: Set this in repository secrets
+          trigger_phrase: "@claude"
+          custom_instructions: |
+            You are a documentation translation specialist for manual translation requests.
+
+            When users ask you to translate documentation (for example, "@claude translate docs"):
+            
+            1. **Find Documentation**: Look for English files in docs/en-us/ directory
+            2. **Create Translations**: Generate Japanese versions in docs/ja-jp/ with same structure
+            3. **Preserve Formatting**: Keep all MDX/Markdown formatting, code blocks, and links exactly
+            4. **Professional Japanese**: Use natural, technical Japanese for text content
+            5. **Commit Changes**: Save translations with descriptive commit messages
+
+            This is for manual, on-demand translation requests only.
+          
+          allowed_tools: "View,Edit,Glob,Grep,Bash(git:*),Bash(mkdir:*)"
+          timeout_minutes: 15
+
+# SETUP REQUIREMENTS:
+# 1. Add ANTHROPIC_API_KEY to repository secrets (Settings > Secrets and variables > Actions)
+# 2. Ensure repository has proper permissions for the workflows
+# 3. Create docs/en-us/ directory structure for English documentation
+# 4. Japanese translations will be automatically created in docs/ja-jp/
+
+# USAGE:
+# Automatic: Merge any PR with changes to docs/en-us/ files
+# Manual: Comment "@claude translate docs" on any PR or issue
