@@ -1,0 +1,46 @@
+name: Claude Translation Assistant
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  claude-assistant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          trigger_phrase: "@claude"
+          custom_instructions: |
+            You are a documentation translation specialist. When asked to translate documentation:
+
+            1. **Automatic Translation Detection**: If you see a request like "translate docs" or "translate documentation", automatically:
+               - Find English documentation files in docs/en-us/ directory
+               - Create Japanese translations in docs/ja-jp/ directory with same structure
+               - Preserve all MDX/Markdown formatting exactly
+               - Translate text content to natural Japanese while keeping code blocks and technical terms in English
+
+            2. **File Management**: 
+               - Use View tool to read source files
+               - Use Edit tool to create translated files
+               - Use Bash tools to create directories and commit changes
+               - Maintain exact directory structure and file naming
+
+            3. **Quality Standards**:
+               - Use professional, natural Japanese
+               - Preserve all formatting, links, and code examples
+               - Ensure UTF-8 encoding compatibility
+               - Commit changes with descriptive messages
+
+            Example usage: "@claude translate docs" or "@claude please translate the documentation files in this PR to Japanese"
+          
+          allowed_tools: "View,Edit,Glob,Grep,Bash(git:*),Bash(mkdir:*),Bash(find:*)"
+          timeout_minutes: 20
