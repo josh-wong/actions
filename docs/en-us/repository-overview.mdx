@@ -1,0 +1,344 @@
+---
+title: GitHub Actions Repository Overview
+description: Comprehensive guide to the automated workflows and scripts available in this GitHub Actions repository
+displayed_sidebar: docsEnglish
+slug: /repository-overview
+tags:
+  - github-actions
+  - automation
+  - workflows
+  - documentation
+author: Josh Wong
+last_update:
+  date: 2025-08-12
+  author: Josh Wong
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# GitHub Actions Repository Overview
+
+Welcome to the GitHub Actions repository! This repository contains a collection of reusable workflows and automation scripts designed to streamline common development tasks across multiple projects.
+
+## Available Actions
+
+This repository provides several powerful automation workflows:
+
+### 🌏 Auto-Translate Markdown
+
+Automatically translate English documentation to Japanese using Claude Code AI.
+
+**Key Features:**
+- High-quality AI-powered translations
+- Preserves markdown formatting and MDX components
+- Automatic front matter updates
+- Supports both `.md` and `.mdx` files
+
+**Use Case:** Perfect for maintaining multilingual documentation websites.
+
+### 📚 Auto-Documentation Generator
+
+Generate comprehensive documentation from your codebase automatically.
+
+**Key Features:**
+- Scans source code for documentation
+- Generates API references
+- Updates documentation on code changes
+- Supports multiple programming languages
+
+**Use Case:** Keep API documentation in sync with code changes.
+
+### 🔄 Auto-Pull Request Manager
+
+Automate pull request creation and management workflows.
+
+**Key Features:**
+- Automated PR creation
+- Version tracking
+- User information integration
+- Streamlined review processes
+
+**Use Case:** Standardize and automate PR workflows across teams.
+
+## Getting Started
+
+### Step 1: Choose Your Workflow
+
+Select the workflow that best fits your project needs:
+
+<Tabs>
+<TabItem value="translate" label="Translation Workflow">
+
+For projects requiring multilingual documentation:
+
+```yaml
+name: Auto-Translate Documentation
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - 'docs/en-us/**/*.md'
+      - 'docs/en-us/**/*.mdx'
+
+jobs:
+  translate:
+    if: github.event.pull_request.merged == true
+    uses: josh-wong/actions/.github/workflows/auto-translate-markdown-claude-reusable.yml@main
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+</TabItem>
+<TabItem value="docs" label="Documentation Generator">
+
+For automated API documentation:
+
+```yaml
+name: Generate Documentation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**/*.js'
+      - 'src/**/*.ts'
+
+jobs:
+  generate-docs:
+    uses: josh-wong/actions/.github/workflows/auto-docs-generate-reusable.yaml@main
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</TabItem>
+<TabItem value="pr" label="PR Automation">
+
+For streamlined pull request management:
+
+```yaml
+name: Auto-PR Management
+on:
+  workflow_dispatch:
+
+jobs:
+  manage-prs:
+    uses: josh-wong/actions/.github/workflows/auto-pr-reusable.yaml@main
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+</TabItem>
+</Tabs>
+
+### Step 2: Configure Repository Secrets
+
+Each workflow requires specific secrets to be configured in your repository:
+
+| Workflow | Required Secrets | Description |
+|----------|------------------|-------------|
+| Auto-Translate | `ANTHROPIC_API_KEY` | Claude AI API key for translations |
+| Auto-Docs | `GITHUB_TOKEN` | Automatically provided by GitHub |
+| Auto-PR | `GITHUB_TOKEN` | Automatically provided by GitHub |
+
+**To add secrets:**
+1. Go to your repository **Settings**
+2. Navigate to **Secrets and variables** > **Actions**
+3. Click **New repository secret**
+4. Add the required secret name and value
+
+### Step 3: Set Up Directory Structure
+
+Organize your repository to work optimally with the workflows:
+
+```
+your-repository/
+├── docs/
+│   ├── en-us/              # English documentation
+│   │   ├── overview.mdx
+│   │   ├── api/
+│   │   │   └── reference.md
+│   │   └── guides/
+│   │       └── setup.md
+│   └── ja-jp/              # Japanese translations (auto-generated)
+│       └── ...
+├── src/                    # Source code for documentation generation
+├── .github/
+│   └── workflows/
+│       └── your-workflow.yml
+└── README.md
+```
+
+## Workflow Details
+
+### Auto-Translate Markdown Workflow
+
+<CodeBlock language="yaml" title=".github/workflows/auto-translate.yml">
+{`name: Auto-Translate Markdown to Japanese
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - 'docs/en-us/**/*.md'
+      - 'docs/en-us/**/*.mdx'
+
+jobs:
+  translate:
+    if: github.event.pull_request.merged == true
+    uses: josh-wong/actions/.github/workflows/auto-translate-markdown-claude-reusable.yml@main
+    secrets:
+      ANTHROPIC_API_KEY: \${{ secrets.ANTHROPIC_API_KEY }}`}
+</CodeBlock>
+
+**How it works:**
+1. Triggers when a PR is merged with changes to English documentation
+2. Scans for modified `.md` and `.mdx` files
+3. Translates content using Claude Code AI
+4. Updates front matter for Japanese documentation
+5. Commits translated files to the repository
+
+### Customization Options
+
+#### Path Configuration
+
+Customize which files trigger the workflows:
+
+```yaml
+paths:
+  - 'docs/en-us/**/*.md'      # English markdown files
+  - 'docs/en-us/**/*.mdx'     # English MDX files
+  - 'content/**/*.md'         # Alternative content directory
+  - '!docs/ja-jp/**'          # Exclude translations
+  - '!docs/internal/**'       # Exclude internal docs
+```
+
+#### Branch Targeting
+
+Control which branches trigger workflows:
+
+```yaml
+on:
+  pull_request:
+    types: [closed]
+    branches: 
+      - main
+      - develop
+      - release/*
+```
+
+#### Conditional Execution
+
+Add conditions for workflow execution:
+
+```yaml
+jobs:
+  translate:
+    if: |
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'documentation')
+```
+
+## Best Practices
+
+### 1. Documentation Structure
+
+- **Consistent naming**: Use clear, descriptive file names
+- **Logical hierarchy**: Organize content in intuitive folder structures
+- **Front matter standards**: Use consistent metadata across files
+
+### 2. Translation Quality
+
+- **Clear source content**: Write clear, concise English documentation
+- **Avoid idioms**: Use straightforward language for better translations
+- **Technical consistency**: Maintain consistent terminology
+
+### 3. Workflow Optimization
+
+- **Targeted triggers**: Use specific path filters to avoid unnecessary runs
+- **Efficient scheduling**: Choose appropriate trigger conditions
+- **Resource management**: Monitor workflow execution times and costs
+
+## Troubleshooting
+
+### Common Issues
+
+#### Workflow Not Triggering
+
+**Symptoms**: Expected workflow doesn't run after PR merge
+
+**Solutions**:
+- Verify path filters match your file structure
+- Check that PR was merged (not just closed)
+- Ensure branch names match workflow configuration
+- Confirm file extensions are included in path filters
+
+#### Authentication Errors
+
+**Symptoms**: Workflow fails with permission or authentication errors
+
+**Solutions**:
+- Verify required secrets are configured correctly
+- Check API key validity and permissions
+- Ensure `GITHUB_TOKEN` has necessary permissions
+- Review repository access settings
+
+#### Translation Quality Issues
+
+**Symptoms**: Poor or inconsistent translations
+
+**Solutions**:
+- Review source content for clarity
+- Use consistent technical terminology
+- Avoid complex sentence structures
+- Consider adding context or glossaries
+
+### Debug Information
+
+To debug workflow issues:
+
+1. **Check workflow logs** in the Actions tab
+2. **Review file paths** and naming conventions
+3. **Verify secret configuration** in repository settings
+4. **Test with minimal examples** before full deployment
+
+## Contributing
+
+To contribute to this repository:
+
+1. **Fork the repository**
+2. **Create a feature branch**
+3. **Test your changes** thoroughly
+4. **Update documentation** as needed
+5. **Submit a pull request**
+
+### Development Guidelines
+
+- Follow existing code style and conventions
+- Add tests for new functionality
+- Update documentation for any changes
+- Ensure workflows are thoroughly tested
+
+## Support and Resources
+
+### Documentation
+
+- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [Workflow Syntax Reference](https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions)
+- [Repository Setup Guides](./setup-guides/)
+
+### Getting Help
+
+- **Issues**: Report bugs or request features via GitHub Issues
+- **Discussions**: Ask questions and share ideas in GitHub Discussions
+- **Documentation**: Check our comprehensive guides and examples
+
+### External Resources
+
+- [Claude AI Documentation](https://docs.anthropic.com/)
+- [GitHub Actions Marketplace](https://github.com/marketplace?type=actions)
+- [YAML Syntax Guide](https://yaml.org/spec/1.2/spec.html)
+
+---
+
+*Ready to automate your workflows? Choose a workflow above and follow the setup guide to get started!*
