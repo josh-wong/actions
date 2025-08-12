@@ -104,7 +104,7 @@ class MarkdownTranslationWorkflow {
   }
 
   async createTranslationBranch() {
-    const branchName = `${this.config.prHeadRef}-ja-jp`;
+    const branchName = `ja-jp/${this.config.prHeadRef}`;
     console.log(`🌿 Creating translation branch: ${branchName}`);
 
     try {

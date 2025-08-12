@@ -6,7 +6,7 @@ This GitHub Actions workflow automatically translates newly merged English Markd
 <summary>Initial prompt</summary>
 <p>When someone in a repository merges a new Markdown (.md or .mdx) file in English, I want the contents of that file to be translated to Japanese.</p>
 
-<p>Details: When a user merges a PR that includes English docs in a different repository, I want to create a workflow action to run that translates new Markdown (.md or .mdx) in English to Japanese. I then want the workflow to create a branch in the target repository in the format "<ORIGINAL_BRANCH_NAME>-ja-jp", use Claude Code to translate the contents to Japanese, create a PR, add the label "documentation" to the PR, request a review from the same people who reviewed the PR that contained the English doc, add the same person who created the PR with the English doc as the assignee, and select the same projects that were selected in the PR with the English doc.</p>
+<p>Details: When a user merges a PR that includes English docs in a different repository, I want to create a workflow action to run that translates new Markdown (.md or .mdx) in English to Japanese. I then want the workflow to create a branch in the target repository in the format "ja-jp/<ORIGINAL_BRANCH_NAME>", use Claude Code to translate the contents to Japanese, create a PR, add the label "documentation" to the PR, request a review from the same people who reviewed the PR that contained the English doc, add the same person who created the PR with the English doc as the assignee, and select the same projects that were selected in the PR with the English doc.</p>
 
 <p>In the Markdown file that contains the Japanese translation, note the following:</p>
 
@@ -70,7 +70,7 @@ graph TD
 ### 3. Translation branch creation
 
 - **Input:** Original branch name
-- **Logic:** Create branch named `<ORIGINAL_BRANCH_NAME>-ja-jp`
+- **Logic:** Create branch named `ja-jp/<ORIGINAL_BRANCH_NAME>`
 - **Output:** New branch reference
 
 ### 4. Content translation
