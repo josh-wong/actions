@@ -27,7 +27,8 @@ jobs:
       - name: Auto-translate documentation to Japanese
         uses: anthropics/claude-code-action@beta
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # Alternative auth method - uncomment if using API key instead
           direct_prompt: |
             A documentation PR has just been merged. Please translate any English documentation changes to Japanese.
 

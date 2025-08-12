@@ -31,7 +31,7 @@ jobs:
       - name: Auto-translate documentation to Japanese
         uses: anthropics/claude-code-action@beta
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # Required: Set this in repository secrets
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}  # Required: Set this in repository secrets
           direct_prompt: |
             A documentation PR has been merged. Please translate any English documentation changes to Japanese.
 
@@ -82,7 +82,7 @@ jobs:
     steps:
       - uses: anthropics/claude-code-action@beta
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # Required: Set this in repository secrets
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}  # Required: Set this in repository secrets
           trigger_phrase: "@claude"
           custom_instructions: |
             You are a documentation translation specialist for manual translation requests.
@@ -101,7 +101,8 @@ jobs:
           timeout_minutes: 15
 
 # SETUP REQUIREMENTS:
-# 1. Add ANTHROPIC_API_KEY to repository secrets (Settings > Secrets and variables > Actions)
+# 1. Add CLAUDE_CODE_OAUTH_TOKEN to repository secrets (Settings > Secrets and variables > Actions)
+#    Generate token by running: claude setup-token (for Pro/Max users)
 # 2. Ensure repository has proper permissions for the workflows
 # 3. Create docs/en-us/ directory structure for English documentation
 # 4. Japanese translations will be automatically created in docs/ja-jp/

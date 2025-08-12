@@ -7,9 +7,9 @@ Automated translation of English documentation to Japanese using Claude Code Git
 ## 🚀 Quick Start
 
 ### 1. Setup Authentication
-Add your Anthropic API key to repository secrets:
+Add your Claude Code OAuth token to repository secrets:
 - Go to **Settings** → **Secrets and variables** → **Actions**
-- Add secret: `ANTHROPIC_API_KEY` = your Claude API key
+- Add secret: `CLAUDE_CODE_OAUTH_TOKEN` = your Claude Code OAuth token
 
 ### 2. Ready to Use!
 - **Automatic**: Merge any PR with changes to `docs/en-us/` files
@@ -95,8 +95,8 @@ git push origin feature-branch
 
 ### Authentication
 - **Official Claude Code Action**: Uses Anthropic's supported GitHub integration
-- **OIDC Authentication**: Secure token exchange with GitHub
-- **API Key Management**: Stored securely in GitHub repository secrets
+- **OAuth Authentication**: Secure Claude Code OAuth token
+- **Token Management**: Stored securely in GitHub repository secrets
 
 ## 🛠️ Customization
 
@@ -136,10 +136,11 @@ direct_prompt: |
 
 ### Common Issues
 
-**❌ "No ANTHROPIC_API_KEY found"**
+**❌ "No CLAUDE_CODE_OAUTH_TOKEN found"**
 - Verify the secret is added to repository settings
-- Check the secret name exactly matches `ANTHROPIC_API_KEY`
+- Check the secret name exactly matches `CLAUDE_CODE_OAUTH_TOKEN`
 - Ensure you have repository admin access to add secrets
+- Generate OAuth token by running `claude setup-token` locally (Pro/Max users)
 
 **❌ "Workflow not triggering"**
 - Automatic: Ensure PR was **merged** (not just closed)
@@ -174,7 +175,7 @@ If upgrading from older auto-translation workflows:
 
 2. **Update secrets**:
    - Remove: `OPENAI_API_KEY_ACTION_TRANSLATE_DOCS`
-   - Add: `ANTHROPIC_API_KEY`
+   - Add: `CLAUDE_CODE_OAUTH_TOKEN`
 
 3. **Test the new setup**:
    - Try manual translation: `@claude translate docs`

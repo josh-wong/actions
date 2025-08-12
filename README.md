@@ -16,7 +16,7 @@ Automatically translates English documentation to Japanese using Claude Code Git
 - **Official Claude Code Action** for reliability
 
 **Quick Start:**
-1. Add `ANTHROPIC_API_KEY` to repository secrets
+1. Add `CLAUDE_CODE_OAUTH_TOKEN` to repository secrets
 2. Copy workflows from `.github/workflows/`
 3. Merge documentation PRs or use `@claude` comments
 
@@ -35,7 +35,9 @@ Automated pull request creation and management workflows.
 ### For Auto-Translation (Recommended)
 ```bash
 # 1. Add to your repository secrets
-ANTHROPIC_API_KEY=your_claude_api_key
+```bash
+CLAUDE_CODE_OAUTH_TOKEN=your_claude_oauth_token
+```
 
 # 2. Copy workflow files
 cp .github/workflows/auto-translate-documentation.yml your-repo/.github/workflows/
