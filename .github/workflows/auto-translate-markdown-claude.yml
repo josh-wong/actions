@@ -13,6 +13,6 @@ jobs:
   translate-markdown:
     if: github.event.pull_request.merged == true
     uses: josh-wong/actions/.github/workflows/auto-translate-markdown-claude-reusable.yml@main
-    secrets:
+    env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       # GITHUB_TOKEN is automatically available and doesn't need to be passed
