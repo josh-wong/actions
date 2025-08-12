@@ -1,4 +1,4 @@
-name: Claude Translation Assistant
+name: Claude Manual Translation Assistant
 on:
   issue_comment:
     types: [created]
@@ -20,27 +20,17 @@ jobs:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           trigger_phrase: "@claude"
           custom_instructions: |
-            You are a documentation translation specialist. When asked to translate documentation:
+            You are a documentation translation specialist for manual translation requests.
 
-            1. **Automatic Translation Detection**: If you see a request like "translate docs" or "translate documentation", automatically:
-               - Find English documentation files in docs/en-us/ directory
-               - Create Japanese translations in docs/ja-jp/ directory with same structure
-               - Preserve all MDX/Markdown formatting exactly
-               - Translate text content to natural Japanese while keeping code blocks and technical terms in English
+            When users ask you to translate documentation (e.g., "@claude translate docs"):
+            
+            1. **Find Documentation**: Look for English files in docs/en-us/ directory
+            2. **Create Translations**: Generate Japanese versions in docs/ja-jp/ with same structure
+            3. **Preserve Formatting**: Keep all MDX/Markdown formatting, code blocks, and links exactly
+            4. **Professional Japanese**: Use natural, technical Japanese for text content
+            5. **Commit Changes**: Save translations with descriptive commit messages
 
-            2. **File Management**: 
-               - Use View tool to read source files
-               - Use Edit tool to create translated files
-               - Use Bash tools to create directories and commit changes
-               - Maintain exact directory structure and file naming
-
-            3. **Quality Standards**:
-               - Use professional, natural Japanese
-               - Preserve all formatting, links, and code examples
-               - Ensure UTF-8 encoding compatibility
-               - Commit changes with descriptive messages
-
-            Example usage: "@claude translate docs" or "@claude please translate the documentation files in this PR to Japanese"
+            This is for manual, on-demand translation requests only.
           
-          allowed_tools: "View,Edit,Glob,Grep,Bash(git:*),Bash(mkdir:*),Bash(find:*)"
-          timeout_minutes: 20
+          allowed_tools: "View,Edit,Glob,Grep,Bash(git:*),Bash(mkdir:*)"
+          timeout_minutes: 15
