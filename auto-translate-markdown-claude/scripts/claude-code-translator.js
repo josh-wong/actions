@@ -87,14 +87,18 @@ Return only the translated markdown:`;
       const tempFile = path.join(process.cwd(), '.translation-prompt.txt');
       await fs.writeFile(tempFile, prompt, 'utf8');
       
-      // Call Claude Code with the prompt file and API key
-      const command = `ANTHROPIC_API_KEY="${process.env.ANTHROPIC_API_KEY}" cat "${tempFile}" | claude -p --output-format json --max-turns 1 --dangerously-skip-permissions`;
+      // Call Claude Code with the prompt file
+      const command = `cat "${tempFile}" | claude -p --output-format json --max-turns 1 --dangerously-skip-permissions`;
       
       console.log('🤖 Calling Claude Code...');
       const output = execSync(command, { 
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
-        timeout: 60000 // 60 second timeout
+        timeout: 60000, // 60 second timeout
+        env: {
+          ...process.env,
+          ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY
+        }
       });
       
       // Clean up temp file
