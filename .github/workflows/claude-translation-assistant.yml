@@ -1,0 +1,37 @@
+name: Claude Manual Translation Assistant
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  claude-assistant:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # Alternative auth method - uncomment if using API key instead
+          trigger_phrase: "@claude"
+          custom_instructions: |
+            You are a documentation translation specialist for manual translation requests.
+
+            When users ask you to translate documentation (e.g., "@claude translate docs"):
+            
+            1. **Find Documentation**: Look for English files in docs/en-us/ directory
+            2. **Create Translations**: Generate Japanese versions in docs/ja-jp/ with same structure
+            3. **Preserve Formatting**: Keep all MDX/Markdown formatting, code blocks, and links exactly
+            4. **Professional Japanese**: Use natural, technical Japanese for text content
+            5. **Commit Changes**: Save translations with descriptive commit messages
+
+            This is for manual, on-demand translation requests only.
+          
+          allowed_tools: "View,Edit,Glob,Grep,Bash(git:*),Bash(mkdir:*)"
+          timeout_minutes: 15
