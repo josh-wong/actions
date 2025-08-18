@@ -30,28 +30,33 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}  # Alternative auth method - uncomment if using API key instead
           direct_prompt: |
-            A documentation PR has just been merged. Please translate any English documentation changes to Japanese.
+            A documentation PR has just been merged. Please translate any English documentation changes to Japanese and create a new PR.
 
             ## Task:
-            1. Identify files that were changed in the merged PR in the docs/en-us/ directory
-            2. For each changed file, create or update the corresponding Japanese translation in docs/ja-jp/
-            3. Maintain the same directory structure and filename in the Japanese docs
+            1. Identify files that were changed in the merged PR in the "docs/en-us/" directory.
+            2. For each changed file, create or update the corresponding Japanese translation in "docs/ja-jp/".
+            3. Maintain the same directory structure and filename in the Japanese docs.
+            4. Create a new branch and pull request with the translations
 
             ## Requirements:
-            - Translate all English text to natural, professional Japanese
-            - Preserve all MDX/Markdown formatting exactly (headers, lists, code blocks, links)
-            - Keep code examples, URLs, and technical terms in English
-            - Ensure proper UTF-8 encoding for Japanese characters
-            - Create docs/ja-jp/ directory structure if it doesn't exist
+            - Translate all English text to natural, professional Japanese.
+            - Preserve all MDX/Markdown formatting exactly (headers, lists, code blocks, links).
+            - Keep code examples, URLs, and technical terms in English.
+            - Ensure proper UTF-8 encoding for Japanese characters.
+          - Create "docs/ja-jp/" directory structure if it doesn't exist.
 
             ## Process:
-            1. Use git to identify which files were modified in the merged PR
-            2. Read each modified English documentation file
-            3. Create high-quality Japanese translations
-            4. Save translations in docs/ja-jp/ with identical file structure
-            5. Commit the translations with a descriptive message
+            1. Use git to identify which files were modified in the merged PR.
+            2. Read each modified English documentation file.
+            3. Create a new branch with the format "ja-jp/<ORIGINAL_PR_BRANCH_NAME_FOR_ENGLISH_PR>", using chain case (-) to separate words.
+            4. Create high-quality Japanese translations.
+            5. Save translations in docs/ja-jp/ with identical file structure.
+            6. Commit the translations with a descriptive message.
+            7. Push the branch and create a pull request with:
+               - Title: "[Japanese] <ORIGINAL_TITLE_OF_THE_PR_IN_ENGLISH>", using sentence-style capitlaization.
+               - Description explaining what was translated and referencing the original PR.
 
-            Please analyze the merged PR and create the necessary Japanese translations.
+            Please analyze the merged PR, create the translations, and submit a new PR automatically.
 
-          allowed_tools: "View,Edit,Glob,Grep,Bash(git:*),Bash(mkdir:*)"
+          allowed_tools: "View,Edit,Glob,Grep,Bash(git:*),Bash(mkdir:*),Bash(gh:*)"
           timeout_minutes: 20
