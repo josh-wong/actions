@@ -43,7 +43,7 @@ jobs:
             - Preserve all MDX/Markdown formatting exactly (headers, lists, code blocks, links).
             - Keep code examples, URLs, and technical terms in English.
             - Ensure proper UTF-8 encoding for Japanese characters.
-          - Create "docs/ja-jp/" directory structure if it doesn't exist.
+            - Create "docs/ja-jp/" directory structure if it doesn't exist.
 
             ## Process:
             1. Use git to identify which files were modified in the merged PR.
