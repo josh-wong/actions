@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to translate. (Optional: If not specified, the recent changes will be translated.)'
+        description: 'PR number to translate. (Optional: If not specified, the recent changes in "docs/en-us/" will be translated.)'
         required: false
         type: string
 
@@ -74,9 +74,9 @@ jobs:
             When creating the pull request, follow these steps:
             1. Read the contents of `.github/pull_request_template.md` to get the base template structure.
             2. Adapt the template content for a Japanese translation PR as follows:
-               - **Description:** "Japanese translation of documentation from the original English PR. This PR translates the following new documentation from English to Japanese: <LIST_FILES_IN_BULLET_FORMAT>"
-               - **Related issues and/or PRs:** Include a link to the original English PR in bullet format: "- [Original English PR](ORIGINAL_PR_URL)"
-               - **Changes made:** List the translated files in bullet format: "- Translated `docs/en-us/[filename]` → `docs/ja-jp/[filename]`"
+               - **Description:** "This PR translates the following new documentation from English to Japanese: <LIST_FILES_IN_BULLET_FORMAT>"
+               - **Related issues and/or PRs:** Include a link to the original English PR in bullet format: "- [ORIGINAL_ENGLISH_PR](ORIGINAL_PR_URL)"
+               - **Changes made:** List the translated files in bullet format: "- Translated `docs/en-us/<FILE_NAME>` → `docs/ja-jp/<FILE_NAME>`"
                - Keep the original checklist, but mark applicable items as completed.
             3. Add the following Claude usage note at the end of the PR body:
                ```
