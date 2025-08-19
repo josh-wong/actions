@@ -1,4 +1,4 @@
-name: Auto-Translate Documentation
+name: Auto-translate documentation (ja-jp)
 on:
   pull_request:
     types: [closed]
