@@ -1,68 +1,64 @@
-# Actions Repository
+# 🎯 Actions repository
 
 This repository contains GitHub Actions and automation workflows for various development tasks.
 
-## 📁 Available Actions
+## 📁 Available actions
 
-### 🌐 Auto-Translate Markdown Documentation
-**Location**: [`auto-translate-markdown-script/`](./auto-translate-markdown-script/)
+Choose from the following automation workflows to enhance your development process.
 
-Automatically translates English documentation to Japanese using Claude Code GitHub Action.
-
-**Features:**
-- **Automatic translation** when documentation PRs are merged
-- **Manual translation** via `@claude translate docs` comments
-- **Professional Japanese** with preserved formatting
-- **Official Claude Code Action** for reliability
-
-**Quick Start:**
-1. Add `CLAUDE_CODE_OAUTH_TOKEN` to repository secrets
-2. Copy workflows from `.github/workflows/`
-3. Merge documentation PRs or use `@claude` comments
-
-### 📚 Auto-Generate Documentation
-**Location**: [`auto-docs-script/`](./auto-docs-script/)
+### 📚 Auto-generate documentation
 
 Automatically generates documentation using various tools and AI.
 
-### 🔄 Auto-PR Creation
-**Location**: [`auto-pr-script/`](./auto-pr-script/)
+| Field           | Details                                              |
+|-----------------|------------------------------------------------------|
+| **Location**    | [`auto-docs-script/`](./auto-docs-script/)           |
+| **Setup guide** | [View documentation](./auto-docs-script/README.md)   |
+
+### 🔄 Auto-PR creation
 
 Automated pull request creation and management workflows.
 
-## 🚀 Quick Setup
+| Field           | Details                                          |
+|-----------------|--------------------------------------------------|
+| **Location**    | [`auto-pr-script/`](./auto-pr-script/)           |
+| **Setup guide** | [View documentation](./auto-pr-script/README.md) |
 
-### For Auto-Translation (Recommended)
-```bash
-# 1. Add to your repository secrets
-```bash
-CLAUDE_CODE_OAUTH_TOKEN=your_claude_oauth_token
-```
+### 🌍 Auto-translate documentation
 
-# 2. Copy workflow files
-cp .github/workflows/auto-translate-documentation.yml your-repo/.github/workflows/
-cp .github/workflows/claude-translation-assistant.yml your-repo/.github/workflows/
+Automatically translates English documentation to Japanese using Claude Code GitHub Action. Features automatic translation on PR merge and manual workflow dispatch.
 
-# 3. Ready to use!
-# - Automatic: Merge PRs with docs changes
-# - Manual: Comment "@claude translate docs"
-```
+| Field           | Details                                                                |
+|-----------------|------------------------------------------------------------------------|
+| **Location**    | [`auto-translate-markdown-script/`](./auto-translate-markdown-script/) |
+| **Setup guide** | [View documentation](./auto-translate-markdown-script/README.md)       |
+
+## 🚀 Getting started
+
+Follow these simple steps to integrate any of these actions into your repository.
+
+1. **Choose an action** from the list above.
+2. **Follow the setup guide** in each subdirectory's README.
+3. **Copy the workflows** to your repository's `.github/workflows/` directory.
+
+Each action has its own comprehensive documentation with setup instructions, usage examples, and troubleshooting guides.
 
 ## 📖 Documentation
 
-Each subdirectory contains its own README with detailed setup and usage instructions:
+Each action includes detailed documentation to help you configure and use the workflows effectively.
 
-- [`auto-translate-markdown-script/README.md`](./auto-translate-markdown-script/README.md) - Translation setup
-- [`auto-docs-script/README.md`](./auto-docs-script/README.md) - Documentation generation
-- [`auto-pr-script/README.md`](./auto-pr-script/README.md) - PR automation
+For detailed setup and usage instructions, see the individual README files:
+
+- **[`auto-translate-markdown-script/README.md`](./auto-translate-markdown-script/README.md):** Translation workflow setup
+- **[`auto-docs-script/README.md`](./auto-docs-script/README.md):** Documentation generation
+- **[`auto-pr-script/README.md`](./auto-pr-script/README.md):** PR automation
 
 ## 🛠️ Development
 
+These workflows are built by using modern GitHub Actions best practices and official integrations.
+
 This repository uses:
+
 - **GitHub Actions** for automation workflows
 - **Official APIs** for reliable integrations (Claude Code, GitHub, etc.)
 - **Reusable workflows** for easy adoption across repositories
-
-## 📄 License
-
-Open source - feel free to use and adapt these workflows for your own projects.
