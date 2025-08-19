@@ -1,28 +1,168 @@
 ---
-title: "テストページ"
-description: "ワークフローテスト用のテストページ"
+tags:
+  - Community
+  - Enterprise Standard
+  - Enterprise Premium
+displayed_sidebar: docsJapanese
 ---
 
 # テストページ
 
-これはテストページです。
+import TranslationBanner from '/src/components/_translation-ja-jp.mdx';
+
+<TranslationBanner />
+
+これは、ドキュメントの自動翻訳ワークフローを検証するために設計された包括的なテストページです。翻訳プロセスがすべてのコンテンツタイプを正しく処理することを確認するために、テキスト、リスト、コードブロック、さまざまな書式を含む様々な要素が含まれています。
 
 ## コンテンツ
 
-ここはテスト用のコンテンツです。
+これは翻訳機能をテストするためのコンテンツです。このセクションでは、翻訳プロセス中に通常の段落がどのように処理されるかを示しています。
+
+自動翻訳システムは、英語のテキストを自然で専門的な日本語に変換しながら、すべての書式を保持する必要があります。これには、適切な間隔、句読点、文書の全体的な構造の維持が含まれます。
+
+技術文書を翻訳する際は、以下を確実にすることが重要です：
+
+- 適切な場合は技術用語を英語のまま保持する
+- コード例を書かれた通りに正確に保持する
+- リンクと参照が正しく機能し続ける
+- 文書の構造と階層が維持される
 
 ## リスト
 
-- 最初の項目
-- 2番目の項目
-- 3番目の項目
+このセクションには、翻訳がさまざまなリスト形式と構造をどのように処理するかをテストするための様々なタイプのリストが含まれています。
+
+### 箇条書きリスト
+
+- **最初の項目：** これはテストリストの最初の項目で、基本的なリスト機能を示しています
+- **2番目の項目：** 2番目の項目では、リスト項目内のネストされたコンテンツがどのように処理されるかを示しています
+- **3番目の項目：** この最終項目で、基本的な箇条書きリストの例を完成させます
+
+### 番号付きリスト
+
+1. **初期ステップ：** 翻訳プロセスの要件を理解することから始めます
+2. **実装フェーズ：** すべての書式要素を保持しながら翻訳を実行します
+3. **検証ステップ：** 翻訳されたコンテンツが元の構造と意味を維持していることを確認します
+
+### ネストされたリストの例
+
+- **主要カテゴリ**
+  - サブカテゴリA：最初のサブカテゴリの詳細
+  - サブカテゴリB：2番目のサブカテゴリの情報
+    - サブサブカテゴリ：複雑な構造をテストするためのさらに深いネスト
+- **2次カテゴリ**
+  - 関連情報を含む別のサブカテゴリ
 
 ## コード
 
+このセクションでは、翻訳プロセスがコードブロックを書かれた通りに正確に保持することを確認するために、様々なコード例と書式を示しています。
+
+### Python例
+
 ```python
-print("Hello World")
+# Sample Python function for testing
+def greet_user(name, language="en"):
+    """
+    Greets the user in the specified language.
+
+    Args:
+        name (str): The user's name
+        language (str): Language code (default: "en")
+
+    Returns:
+        str: Formatted greeting message
+    """
+    greetings = {
+        "en": f"Hello, {name}!",
+        "ja": f"こんにちは、{name}さん！",
+        "es": f"¡Hola, {name}!"
+    }
+
+    return greetings.get(language, greetings["en"])
+
+# Usage example
+print(greet_user("Alice", "ja"))
+```
+
+### JavaScript例
+
+```javascript
+// Configuration object for API endpoints
+const apiConfig = {
+    baseUrl: 'https://api.example.com',
+    version: 'v1',
+    timeout: 5000,
+
+    // Method to build full endpoint URL
+    buildUrl(endpoint) {
+        return `${this.baseUrl}/${this.version}/${endpoint}`;
+    }
+};
+
+// Async function to fetch user data
+async function fetchUserData(userId) {
+    try {
+        const response = await fetch(apiConfig.buildUrl(`users/${userId}`));
+        const userData = await response.json();
+        return userData;
+    } catch (error) {
+        console.error('Failed to fetch user data:', error);
+        throw error;
+    }
+}
+```
+
+### Bashスクリプト例
+
+```bash
+#!/bin/bash
+
+# Script to set up development environment
+echo "Setting up development environment..."
+
+# Create necessary directories
+mkdir -p logs temp config
+
+# Install dependencies
+if command -v npm &> /dev/null; then
+    echo "Installing Node.js dependencies..."
+    npm install
+else
+    echo "Node.js not found. Please install Node.js first."
+    exit 1
+fi
+
+echo "Environment setup complete!"
 ```
 
 ## 終わり
 
-これがテストページの終わりです。
+これで、自動翻訳ワークフローを検証するための包括的なテストページが完了します。この最終セクションは、テストプロセスにおいて複数の重要な目的を果たします。
+
+### テスト要素の概要
+
+この文書は、翻訳システムが処理する必要がある様々なコンテンツタイプを正常に示しました：
+
+- **リッチテキストコンテンツ：** 多様な文構造と技術言語を含む段落
+- **複数のリスト形式：** 詳細な説明付きの箇条書き、番号付き、ネストされたリスト
+- **コード例：** コメント、関数、複雑な構文を含む多言語コードブロック
+- **書式要素：** 太字テキスト、インラインコード、ヘッダー、構造要素
+
+### 翻訳検証
+
+この文書が日本語に翻訳される際、システムは以下を行う必要があります：
+
+1. **すべてのコードブロックを保持する** 変数名、コメント、技術構文を翻訳せずに、書かれた通りに正確に保持する
+2. **文書構造を維持する** すべてのヘッダー、サブヘッダー、リスト階層を含む
+3. **説明テキストを変換する** 技術用語を英語のまま保持しながら、自然で専門的な日本語に変換する
+4. **すべての書式を保持する** 太字テキスト、インラインコード書式、リンク構造など
+
+### 期待される結果
+
+成功した翻訳により、以下のような日本語文書が生成されます：
+
+- 同一の構造と書式を維持する
+- すべての説明コンテンツに対して明確で専門的な日本語テキストを提供する
+- すべての技術要素を変更せずに保持する
+- 必要なTranslationBannerコンポーネントと適切なサイドバー設定を含む
+
+このテストページは、技術文書でよく見られる多様なコンテンツタイプにわたって、自動翻訳システムの機能を検証するための包括的な基盤を提供します。
