@@ -40,8 +40,8 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          trigger_phrase: ""
-          mode: "agent"
+          trigger_phrase: ${{ github.event_name == 'workflow_dispatch' && '' || 'auto-translate' }}
+          mode: ${{ github.event_name == 'workflow_dispatch' && 'agent' || 'tag' }}
           direct_prompt: |
             A documentation PR has been merged. Please translate any English documentation changes to Japanese and create a new PR.
 
