@@ -59,6 +59,13 @@ jobs:
             - Keep code examples, URLs, and technical terms in English.
             - Ensure proper UTF-8 encoding for Japanese characters.
             - Create "docs/ja-jp/" directory structure if it doesn't exist.
+            - Add the following import and component below the title of each translated document:
+              ```
+              import TranslationBanner from '/src/components/_translation-ja-jp.mdx';
+
+              <TranslationBanner />
+              ```
+            - In the front matter properties, change `displayed_sidebar: docsEnglish` to `displayed_sidebar: docsJapanese`.
 
             ## Process
             1. Use git to identify which files were modified in the merged PR and get the PR details.
@@ -75,8 +82,8 @@ jobs:
             1. Read the contents of `.github/pull_request_template.md` to get the base template structure.
             2. Adapt the template content for a Japanese translation PR as follows:
                - **Description:** "This PR translates the following new documentation from English to Japanese: <LIST_FILES_IN_BULLET_FORMAT>"
-               - **Related issues and/or PRs:** Include a link to the original English PR in bullet format: "- [ORIGINAL_ENGLISH_PR](ORIGINAL_PR_URL)"
-               - **Changes made:** List the translated files in bullet format: "- Translated `docs/en-us/<FILE_NAME>` → `docs/ja-jp/<FILE_NAME>`"
+               - **Related issues and/or PRs:** Include a link to the original English PR in bullet format: "- #<ORIGINAL_PR_NUMBER>"
+               - **Changes made:** List the translated files in bullet format: "- Translated the English doc (`docs/en-us/<FILE_NAME>`) to Japanese (`docs/ja-jp/<FILE_NAME>`)."
                - Keep the original checklist, but mark applicable items as completed.
             3. Add the following Claude usage note at the end of the PR body:
                ```
