@@ -61,7 +61,7 @@ jobs:
             - Create "docs/ja-jp/" directory structure if it doesn't exist.
             - For existing translations: Preserve unchanged content and only update sections that correspond to changes in the English version.
             - For new translations: Create complete Japanese translations of the entire document.
-            - Add the following import and component below the title of each translated document:
+            - Add the following import and component below the heading 1/title of each translated document:
               ```
               import TranslationBanner from '/src/components/_translation-ja-jp.mdx';
 
@@ -72,10 +72,10 @@ jobs:
             ## Process
             1. Use git to identify which files were modified in the merged PR and get the PR details.
             2. For each modified English documentation file:
-               a. Check if a Japanese translation already exists in docs/ja-jp/
-               b. If translation exists: Use `git diff` to identify only the changed sections in the English file
-               c. If translation exists: Update only the changed sections in the Japanese file, preserving unchanged content
-               d. If no translation exists: Create a complete new Japanese translation
+               a. Check if a Japanese translation already exists in "docs/ja-jp/".
+               b. If a translation exists: Use `git diff` to identify only the changed sections in the English file.
+               c. If a translation exists: Update only the changed sections in the Japanese file, preserving unchanged content.
+               d. If no translation exists: Create a completely new Japanese translation.
             3. Create a new branch with the format "ja-jp/<ORIGINAL_PR_BRANCH_NAME_FOR_ENGLISH_PR>", using chain case (-) to separate words.
             4. Create high-quality Japanese translations (full or partial based on changes).
             5. Save translations in docs/ja-jp/ with identical file structure.
@@ -87,9 +87,9 @@ jobs:
             When creating the pull request, follow these steps:
             1. Read the contents of `.github/pull_request_template.md` to get the base template structure.
             2. Adapt the template content for a Japanese translation PR as follows:
-               - **Description:** "This PR translates the following documentation changes from English to Japanese: <LIST_FILES_WITH_CHANGE_TYPE_IN_BULLET_FORMAT>" (indicate whether each file is new, updated, or partially updated)
+               - **Description:** "This PR translates the following documentation changes from English to Japanese: <LIST_FILES_WITH_CHANGE_TYPE_IN_BULLET_FORMAT>" (indicate whether each file is a new doc or updated content)
                - **Related issues and/or PRs:** Include a link to the original English PR in bullet format: "- #<ORIGINAL_PR_NUMBER>"
-               - **Changes made:** List the translated files in bullet format: "- Translated the English doc (`docs/en-us/<FILE_NAME>`) to Japanese (`docs/ja-jp/<FILE_NAME>`) [new/updated/partial update]."
+               - **Changes made:** List the translated files in bullet format: "- Translated English content (``docs/en-us/<FILE_NAME>``) to Japanese (``docs/ja-jp/<FILE_NAME>``). (new doc/updated content)"
                - Keep the original checklist, but mark applicable items as completed.
             3. Add the following Claude usage note at the end of the PR body:
                ```
