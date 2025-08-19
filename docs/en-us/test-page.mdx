@@ -8,157 +8,31 @@ displayed_sidebar: docsEnglish
 
 # Test Page
 
-This is a comprehensive test page designed to validate the auto-translation workflow for documentation. It contains various elements including text, lists, code blocks, and different formatting to ensure the translation process handles all content types correctly.
+This is a simple test page for validating the auto-translation workflow.
 
 ## Content
 
-Here is some content for testing the translation capabilities. This section demonstrates how regular paragraphs are handled during the translation process.
-
-The auto-translation system should preserve all formatting while converting the English text to natural, professional Japanese. This includes maintaining proper spacing, punctuation, and the overall structure of the document.
-
-When translating technical documentation, it's important to ensure that:
-
-- Technical terms remain in English where appropriate
-- Code examples are preserved exactly as written
-- Links and references continue to function correctly
-- The document structure and hierarchy are maintained
+This section contains basic content to test the translation process. The system should translate this text to Japanese while preserving the formatting.
 
 ## List
 
-This section contains various types of lists to test how the translation handles different list formats and structures.
+Here are some basic list examples:
 
-### Unordered list
-
-- **First item:** This is the first item in our test list, demonstrating basic list functionality
-- **Second item:** The second item shows how nested content within list items is handled
-- **Third item:** This final item completes our basic unordered list example
-
-### Ordered list
-
-1. **Initial step:** Begin by understanding the requirements for the translation process
-2. **Implementation phase:** Execute the translation while preserving all formatting elements
-3. **Validation step:** Verify that the translated content maintains the original structure and meaning
-
-### Nested list example
-
-- **Primary category**
-  - Subcategory A: Details about the first subcategory
-  - Subcategory B: Information about the second subcategory
-    - Sub-subcategory: Even deeper nesting to test complex structures
-- **Secondary category**
-  - Another subcategory with relevant information
+- First item
+- Second item
+- Third item
 
 ## Code
 
-This section demonstrates various code examples and formatting to ensure the translation process preserves code blocks exactly as written.
-
-### Python example
+Simple code example:
 
 ```python
-# Sample Python function for testing
-def greet_user(name, language="en"):
-    """
-    Greets the user in the specified language.
+def hello_world():
+    print("Hello, World!")
 
-    Args:
-        name (str): The user's name
-        language (str): Language code (default: "en")
-
-    Returns:
-        str: Formatted greeting message
-    """
-    greetings = {
-        "en": f"Hello, {name}!",
-        "ja": f"こんにちは、{name}さん！",
-        "es": f"¡Hola, {name}!"
-    }
-
-    return greetings.get(language, greetings["en"])
-
-# Usage example
-print(greet_user("Alice", "ja"))
-```
-
-### JavaScript example
-
-```javascript
-// Configuration object for API endpoints
-const apiConfig = {
-    baseUrl: 'https://api.example.com',
-    version: 'v1',
-    timeout: 5000,
-
-    // Method to build full endpoint URL
-    buildUrl(endpoint) {
-        return `${this.baseUrl}/${this.version}/${endpoint}`;
-    }
-};
-
-// Async function to fetch user data
-async function fetchUserData(userId) {
-    try {
-        const response = await fetch(apiConfig.buildUrl(`users/${userId}`));
-        const userData = await response.json();
-        return userData;
-    } catch (error) {
-        console.error('Failed to fetch user data:', error);
-        throw error;
-    }
-}
-```
-
-### Bash script example
-
-```bash
-#!/bin/bash
-
-# Script to set up development environment
-echo "Setting up development environment..."
-
-# Create necessary directories
-mkdir -p logs temp config
-
-# Install dependencies
-if command -v npm &> /dev/null; then
-    echo "Installing Node.js dependencies..."
-    npm install
-else
-    echo "Node.js not found. Please install Node.js first."
-    exit 1
-fi
-
-echo "Environment setup complete!"
+hello_world()
 ```
 
 ## End
 
-This concludes the comprehensive test page for validating the auto-translation workflow. This final section serves multiple important purposes in the testing process.
-
-### Summary of test elements
-
-This document has successfully demonstrated various content types that the translation system must handle:
-
-- **Rich text content:** Paragraphs with varied sentence structures and technical language
-- **Multiple list formats:** Unordered, ordered, and nested lists with detailed descriptions
-- **Code examples:** Multi-language code blocks with comments, functions, and complex syntax
-- **Formatting elements:** Bold text, inline code, headers, and structural elements
-
-### Translation validation
-
-When this document is translated to Japanese, the system should:
-
-1. **Preserve all code blocks** exactly as written, without translating variable names, comments, or technical syntax
-2. **Maintain document structure** including all headers, subheaders, and list hierarchies
-3. **Convert descriptive text** to natural, professional Japanese while keeping technical terms in English
-4. **Retain all formatting** such as bold text, inline code formatting, and link structures
-
-### Expected outcomes
-
-A successful translation will result in a Japanese document that:
-
-- Maintains identical structure and formatting
-- Provides clear, professional Japanese text for all descriptive content
-- Preserves all technical elements unchanged
-- Includes the required TranslationBanner component and proper sidebar configuration
-
-This test page provides a comprehensive foundation for validating the auto-translation system's capabilities across diverse content types commonly found in technical documentation.
+This concludes the test page. The auto-translation workflow should create a Japanese version of this document.
