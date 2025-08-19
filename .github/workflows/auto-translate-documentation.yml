@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to translate (optional - if not provided, will translate recent changes)'
+        description: 'PR number to translate. (Optional: If not specified, the recent changes will be translated.)'
         required: false
         type: string
 
