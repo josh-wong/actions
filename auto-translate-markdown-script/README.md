@@ -1,6 +1,6 @@
 # 🌍 Auto-translate documentation workflow
 
-Automated translation of English documentation to Japanese using Claude Code GitHub Action. This workflow provides both automatic translation when PRs are merged and manual translation on-demand, with advanced features for handling documentation updates and preserving existing translations.
+Automated translation of English documentation to Japanese by using Claude Code GitHub Action. This workflow provides both automatic translation when PRs are merged and manual translation on-demand, with advanced features for handling documentation updates and preserving existing translations.
 
 ## 🚀 Quickstart
 

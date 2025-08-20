@@ -1,6 +1,6 @@
 # Sample usage for auto-translate documentation by using Claude Code Action
-# The following approach is a reusable workflow that calls the centralized workflow file (.github/workflows/auto-translate-docs-reusable.yml) in the josh-wong/actions from any repository.
-# NOTE: Name this file ".github/workflows/auto-translate-docs.yml"
+# The following approach is a reusable workflow that calls the centralized workflow file (.github/workflows/auto-translate-documentation-reusable.yml) in the josh-wong/actions from any repository.
+# NOTE: Name this file ".github/workflows/auto-translate-documentation.yml"
 
 name: Auto-translate documentation (ja-jp)
 on:
@@ -12,7 +12,7 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to translate (optional)'
+        description: 'PR number to translate. (Optional: If not specified, the most recent commit that contains docs in "docs/en-us/" will be translated.)'
         required: false
         type: string
 

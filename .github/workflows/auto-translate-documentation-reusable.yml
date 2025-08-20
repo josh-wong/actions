@@ -8,13 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: 'PR number to translate. (Optional: If not specified, the recent changes in "docs/en-us/" will be translated.)'
+        description: 'PR number to translate. (Optional: If not specified, the most recent commit that contains docs in "docs/en-us/" will be translated.)'
         required: false
         type: string
   workflow_call:
     inputs:
       pr_number:
-        description: 'PR number to translate. (Optional: If not specified, the recent changes in "docs/en-us/" will be translated.)'
+        description: 'PR number to translate. (Optional: If not specified, the most recent commit that contains docs in "docs/en-us/" will be translated.)'
         required: false
         type: string
     secrets:
