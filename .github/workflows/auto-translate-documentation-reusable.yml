@@ -21,9 +21,6 @@ on:
       CLAUDE_CODE_OAUTH_TOKEN:
         description: 'Claude Code OAuth token for authentication'
         required: true
-      GITHUB_TOKEN:
-        description: 'GitHub token for repository access'
-        required: false
 
 permissions:
   contents: write
