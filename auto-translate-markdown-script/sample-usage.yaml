@@ -1,6 +1,6 @@
 # Sample usage for auto-translate documentation by using Claude Code Action
 # The following approach is a reusable workflow that calls the centralized workflow file (.github/workflows/auto-translate-docs-reusable.yml) in the josh-wong/actions from any repository.
-# NOTE: Name this file ".github/workflows/auto-translate-docs-reusable.yml"
+# NOTE: Name this file ".github/workflows/auto-translate-docs.yml"
 
 name: Auto-translate documentation (ja-jp)
 on:
