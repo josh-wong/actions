@@ -11,6 +11,19 @@ on:
         description: 'PR number to translate. (Optional: If not specified, the recent changes in "docs/en-us/" will be translated.)'
         required: false
         type: string
+  workflow_call:
+    inputs:
+      pr_number:
+        description: 'PR number to translate. (Optional: If not specified, the recent changes in "docs/en-us/" will be translated.)'
+        required: false
+        type: string
+    secrets:
+      CLAUDE_CODE_OAUTH_TOKEN:
+        description: 'Claude Code OAuth token for authentication'
+        required: true
+      GITHUB_TOKEN:
+        description: 'GitHub token for repository access'
+        required: false
 
 permissions:
   contents: write
@@ -22,8 +35,8 @@ permissions:
 jobs:
   auto-translate:
     runs-on: ubuntu-latest
-    # Only run if PR was merged (not just closed) OR if manually triggered
-    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+    # Only run if PR was merged (not just closed) OR if manually triggered OR if called from another workflow
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,8 +53,8 @@ jobs:
         uses: anthropics/claude-code-action@beta
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          trigger_phrase: ${{ github.event_name == 'workflow_dispatch' && '' || 'auto-translate' }}
-          mode: ${{ github.event_name == 'workflow_dispatch' && 'agent' || 'tag' }}
+          trigger_phrase: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && '' || 'auto-translate' }}
+          mode: ${{ (github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call') && 'agent' || 'tag' }}
           direct_prompt: |
             A documentation PR has been merged. Please translate any English documentation changes to Japanese and create a new PR.
 
