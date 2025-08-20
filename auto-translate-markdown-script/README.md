@@ -10,8 +10,11 @@ This section covers the essential setup steps to get the auto-translation workfl
 
 Add your Claude Code OAuth token to repository secrets:
 
-1. Go to **Settings** → **Secrets and variables** → **Actions**.
-2. Create a new repository secret: `CLAUDE_CODE_OAUTH_TOKEN` = your Claude Code OAuth token
+1. **Install Claude Code:** Ensure that you have Claude Code installed on your computer.
+2. **Generate an OAuth token:** In **Terminal** on your computer, run `claude setup-token` and follow the instructions to get a Claude Code OAuth token.
+3. **Add the token to the repository secrets:**
+   - Go to **Settings** → **Secrets and variables** → **Actions**.
+   - Create a new repository secret: `CLAUDE_CODE_OAUTH_TOKEN` = your Claude Code OAuth token
 
 ### ✅ Ready to use
 
