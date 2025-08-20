@@ -26,7 +26,7 @@ The workflow is built by using GitHub Actions and Claude Code Action to provide 
 
 ### 📄 Auto-translate documentation workflow file
 
-The complete workflow configuration is available in [`.github/workflows/auto-translate-documentation.yml`](/.github/workflows/auto-translate-documentation.yml).
+The complete workflow configuration is available in [`.github/workflows/auto-translate-documentation-reusable.yml`](/.github/workflows/auto-translate-documentation-reusable.yml).
 
 This workflow file contains:
 
@@ -127,7 +127,7 @@ You can customize the workflow behavior to match your specific requirements.
 
 ### 🔧 Modify translation behavior
 
-If necessary, you can edit `direct_prompt` in `auto-translate-documentation.yml` to change translation behavior:
+If necessary, you can edit `direct_prompt` in `auto-translate-documentation-reusable.yml` to change translation behavior:
 
 ```yaml
 direct_prompt: |
