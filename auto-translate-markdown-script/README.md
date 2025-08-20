@@ -16,6 +16,10 @@ Add your Claude Code OAuth token to repository secrets:
    - Go to **Settings** → **Secrets and variables** → **Actions**.
    - Create a new repository secret: `CLAUDE_CODE_OAUTH_TOKEN` = your Claude Code OAuth token
 
+> [!IMPORTANT]
+>
+> **Regarding token expiration:** The Claude Code OAuth token is valid for only one year and must be renewed after expiration. Make a note to renew your token before it expires to avoid workflow disruptions.
+
 ### ✅ Ready to use
 
 After authentication is configured, the workflow is ready to use in two ways:
