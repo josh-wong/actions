@@ -1,10 +1,5 @@
 name: Auto-translate documentation (ja-jp)
 on:
-  pull_request:
-    types: [closed]
-    paths:
-      - "docs/en-us/**/*.mdx"
-      - "docs/en-us/**/*.md"
   workflow_call:
     inputs:
       pr_number:
