@@ -5,22 +5,6 @@ on:
     paths:
       - "docs/en-us/**/*.mdx"
       - "docs/en-us/**/*.md"
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'PR number to translate. (Optional: If not specified, the most recent commit that contains docs in "docs/en-us/" will be translated.)'
-        required: false
-        type: string
-  workflow_call:
-    inputs:
-      pr_number:
-        description: 'PR number to translate. (Optional: If not specified, the most recent commit that contains docs in "docs/en-us/" will be translated.)'
-        required: false
-        type: string
-    secrets:
-      CLAUDE_CODE_OAUTH_TOKEN:
-        description: 'Claude Code OAuth token for authentication'
-        required: true
 
 permissions:
   contents: write
