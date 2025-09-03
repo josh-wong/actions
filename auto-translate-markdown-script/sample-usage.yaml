@@ -18,6 +18,8 @@ on:
 
 jobs:
   translate-docs:
+    # Only run if the PR was merged (not just closed) OR if the workflow was manually triggered
+    if: ${{ github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch' }}
     uses: josh-wong/actions/.github/workflows/auto-translate-docs-reusable.yml@main
     with:
       pr_number: ${{ inputs.pr_number || '' }}
