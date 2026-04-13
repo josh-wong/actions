@@ -3,9 +3,9 @@ name: Validate Markdown File Extensions
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    paths:
-      - "docs/**"
-      - "src/components/**"
+    # NOTE: No path filters specified intentionally.
+    # This workflow is designed to be a required status check, which means it must run on ALL PRs to report a status. If we used path filters like `paths: ["docs/**", "src/components/**"]`, then PRs that don't include changes to those paths wouldn't trigger this workflow, causing GitHub to block merging due to a missing required status check.
+    # Instead, we handle path filtering inside the workflow logic and exit early when no relevant files are found, providing clear "no files to check" messaging.
 
 jobs:
   validate-mdx-extensions:
@@ -25,7 +25,7 @@ jobs:
         run: |
           # Get a list of the changed files from the PR, with fallback for local testing.
           if [[ -n "${{ github.event.number }}" ]] && command -v gh >/dev/null 2>&1; then
-            # Running in GitHub Actions with PR context
+            # Running in GitHub Actions with PR context.
             files=$(gh pr view ${{ github.event.number }} --json files --jq '.files[].path' 2>/dev/null || echo "")
           else
             # Fallback for local testing or when gh is not available.
@@ -35,24 +35,39 @@ jobs:
 
           # Filter for .md files in docs/en-us/, docs/ja-jp/, and src/components/ (including subfolders).
           invalid_files=""
+          relevant_files=""
           while IFS= read -r file; do
-            if [[ -n "$file" && "$file" =~ ^(docs/(en-us|ja-jp)/|src/components/).*\.md$ ]]; then
-              invalid_files="$invalid_files$file"$'\n'
+            if [[ -n "$file" && ("$file" =~ ^docs/(en-us|ja-jp)/ || "$file" =~ ^src/components/) ]]; then
+              relevant_files="$relevant_files$file"$'\n'
+              if [[ "$file" =~ \.md$ ]]; then
+                invalid_files="$invalid_files$file"$'\n'
+              fi
             fi
           done <<< "$files"
 
-          # Remove trailing newline.
+          # Remove trailing newlines.
           invalid_files=$(echo "$invalid_files" | sed '/^$/d')
+          relevant_files=$(echo "$relevant_files" | sed '/^$/d')
 
           # Set outputs.
           echo "invalid_files<<EOF" >> $GITHUB_OUTPUT
           echo "$invalid_files" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+          echo "relevant_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$relevant_files" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
           if [[ -n "$invalid_files" ]]; then
             echo "has_invalid_files=true" >> $GITHUB_OUTPUT
           else
             echo "has_invalid_files=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [[ -n "$relevant_files" ]]; then
+            echo "has_relevant_files=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_relevant_files=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Validate file extensions
@@ -82,6 +97,20 @@ jobs:
 
       - name: Success message
         if: steps.changed-files.outputs.has_invalid_files == 'false'
+        env:
+          HAS_RELEVANT_FILES: ${{ steps.changed-files.outputs.has_relevant_files }}
+          RELEVANT_FILES: ${{ steps.changed-files.outputs.relevant_files }}
         run: |
-          echo "✅ All Markdown files use the correct extension (.mdx)."
-          echo "📝 No .md files found in docs/en-us/, docs/ja-jp/, or src/components/ folders."
+          if [[ "$HAS_RELEVANT_FILES" == "true" ]]; then
+            echo "✅ All Markdown files use the correct extension (.mdx)."
+            echo "📝 Validated files in docs/en-us/, docs/ja-jp/, and src/components/ folders."
+            echo ""
+            echo "Files checked:"
+            echo "$RELEVANT_FILES" | while IFS= read -r file; do
+              echo "  • $file"
+            done
+          else
+            echo "✅ Validation passed. No files to check."
+            echo "📝 This PR doesn't modify files in docs/en-us/, docs/ja-jp/, or src/components/."
+            echo "ℹ️  Workflow runs on all PRs but only validates specific folders."
+          fi
