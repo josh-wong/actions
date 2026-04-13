@@ -1,0 +1,87 @@
+name: Validate Markdown File Extensions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "docs/**"
+      - "src/components/**"
+
+jobs:
+  validate-mdx-extensions:
+    name: Check for .md files in docs locale folders and components
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get a list of the changed files from the PR, with fallback for local testing.
+          if [[ -n "${{ github.event.number }}" ]] && command -v gh >/dev/null 2>&1; then
+            # Running in GitHub Actions with PR context
+            files=$(gh pr view ${{ github.event.number }} --json files --jq '.files[].path' 2>/dev/null || echo "")
+          else
+            # Fallback for local testing or when gh is not available.
+            # Compare current branch with main branch to get changed files.
+            files=$(git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || echo "")
+          fi
+
+          # Filter for .md files in docs/en-us/, docs/ja-jp/, and src/components/ (including subfolders).
+          invalid_files=""
+          while IFS= read -r file; do
+            if [[ -n "$file" && "$file" =~ ^(docs/(en-us|ja-jp)/|src/components/).*\.md$ ]]; then
+              invalid_files="$invalid_files$file"$'\n'
+            fi
+          done <<< "$files"
+
+          # Remove trailing newline.
+          invalid_files=$(echo "$invalid_files" | sed '/^$/d')
+
+          # Set outputs.
+          echo "invalid_files<<EOF" >> $GITHUB_OUTPUT
+          echo "$invalid_files" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          if [[ -n "$invalid_files" ]]; then
+            echo "has_invalid_files=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_invalid_files=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Validate file extensions
+        if: steps.changed-files.outputs.has_invalid_files == 'true'
+        env:
+          INVALID_FILES: ${{ steps.changed-files.outputs.invalid_files }}
+        run: |
+          echo "❌ Found .md files that should use the .mdx extension:"
+          echo ""
+          echo "The following files have invalid extensions:"
+          echo "$INVALID_FILES" | while IFS= read -r file; do
+            echo "  • $file"
+          done
+          echo ""
+          echo "📝 In Docusaurus projects, files in these locations must use the .mdx extension:"
+          echo "   • docs/en-us/ and docs/ja-jp/ (locale-specific documentation)"
+          echo "   • src/components/ (React components and documentation)"
+          echo ""
+          echo "🔧 To fix this issue:"
+          echo "   1. Rename each .md file to .mdx."
+          echo "   2. Update any references to these files in other documents."
+          echo "   3. Ensure the file content is compatible with MDX format."
+          echo ""
+          echo "ℹ️ Files outside of these folders (like docs/README.md) can remain as .md."
+
+          exit 1
+
+      - name: Success message
+        if: steps.changed-files.outputs.has_invalid_files == 'false'
+        run: |
+          echo "✅ All Markdown files use the correct extension (.mdx)."
+          echo "📝 No .md files found in docs/en-us/, docs/ja-jp/, or src/components/ folders."
