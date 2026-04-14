@@ -19,7 +19,7 @@ on:
         required: false
         type: string
         description: 'Custom warning message when no project is assigned'
-        default: 'No project assigned to this PR. Consider assigning a project if this change should be tracked for a specific release.'
+        default: 'No project assigned to this PR. Consider assigning projects if this change should be applied to other versions/releases.'
 
 env:
   TERM: xterm
@@ -44,12 +44,12 @@ jobs:
           SCRIPT_PATH: ./pr-project-assignment-script
         run: |
           echo "Checking project assignment for PR #${{ inputs.pr_number }}..."
-          
-          # Get projects assigned to the PR
+
+          # Get projects assigned to the PR.
           projects=$($SCRIPT_PATH/check_pr_project_assignment "${{ inputs.repo_owner }}" "${{ inputs.repo_name }}" "${{ inputs.pr_number }}")
-          
+
           if [[ -z "$projects" ]]; then
-            echo "::warning title=No Project Assigned::${{ inputs.warning_message }}"
+            echo "::warning title=No projects assigned::${{ inputs.warning_message }}"
             echo "ℹ️ This is a warning only and will not block the PR."
           else
             echo "✅ PR is assigned to projects: $projects"

@@ -11,7 +11,7 @@ repo_owner=$1
 repo_name=$2
 pull_request_id=$3
 
-# Get GitHub projects associated with the PR
+# Get GitHub projects associated with the PR.
 projects_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pullRequestId=$pull_request_id -f query='
   query($owner: String!, $repoName: String!, $pullRequestId: Int!) {
     repository(owner: $owner, name: $repoName) {
@@ -26,5 +26,5 @@ projects_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pu
   }
 ')
 
-# Extract project titles and return them as a comma-separated list
+# Extract project titles and return them as a comma-separated list. If no projects are assigned, this will return an empty string.
 echo $projects_json | jq -r '.data.repository.pullRequest.projectsV2.nodes[].title' | tr '\n' ',' | sed 's/,$//'
