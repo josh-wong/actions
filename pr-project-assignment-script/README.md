@@ -10,7 +10,7 @@ The [`.github/workflows/pr-project-assignment-check-reusable.yml`](../.github/wo
 ## Requirements
 
 - The repository must have GitHub Projects enabled.
-- The workflow requires `contents: read`, `pull-requests: write`, and `projects: read` permissions.
+- The workflow requires `contents: read` and `pull-requests: write` permissions.
 
 ## Implement the workflow
 
