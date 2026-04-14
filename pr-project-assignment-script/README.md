@@ -3,13 +3,14 @@
 The [`.github/workflows/pr-project-assignment-check-reusable.yml`](../.github/workflows/pr-project-assignment-check-reusable.yml) workflow checks if a PR has a project assigned in the GitHub sidebar. The following outcomes are possible when the workflow runs:
 
 - **If projects are assigned:** Returns a comma-separated list of project titles.
+  - A comment will be posted on the PR, mentioning the PR creator (@username) as a heads-up.
 - **If no projects are assigned:** Returns an empty output.
   - The workflow shows a warning annotation (non-blocking) if no projects are found. The reason why this is a warning and not an error is to allow flexibility in cases where project assignment may not be mandatory.
 
 ## Requirements
 
 - The repository must have GitHub Projects enabled.
-- The workflow requires `contents: read` permission.
+- The workflow requires `contents: read` and `pull-requests: write` permissions.
 
 ## Implement the workflow
 

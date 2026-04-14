@@ -11,6 +11,10 @@ on:
   pull_request:
     types: [opened]
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   check_project_assignment:
     uses: josh-wong/actions/.github/workflows/pr-project-assignment-check-reusable.yml@main
