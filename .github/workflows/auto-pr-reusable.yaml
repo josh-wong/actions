@@ -9,7 +9,7 @@ on:
         description: 'The base name of the projects used in the repository. For example, "Project" if projects are named "Project <version>".'
 
 env:
-  TERM: dumb
+  TERM: xterm
 jobs:
   create_backport_pull_requests:
     if: github.event.pull_request.merged == true
