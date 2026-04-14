@@ -53,7 +53,7 @@ classic_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pul
       }
     }
   }
-')
+' 2>/dev/null || echo '{"data":{"repository":{"pullRequest":{"projectCards":{"nodes":[]}}}}}')
 
 classic_projects=$(echo $classic_json | jq -r '.data.repository.pullRequest.projectCards.nodes[].project.name' 2>/dev/null || echo "")
 echo "Classic projects found: '$classic_projects'" >&2
@@ -101,6 +101,6 @@ fi
 echo "User projects found: '$user_projects'" >&2
 
 # Combine all found projects
-all_projects=$(printf "%s\n%s\n%s" "$projects_v2" "$classic_projects" "$user_projects" | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+all_projects=$(printf "%s\n%s\n%s" "$projects_v2" "$classic_projects" "$user_projects" | grep -v '^$' | tr '\n' ',' | sed 's/,$//' || echo "")
 
 echo $all_projects
