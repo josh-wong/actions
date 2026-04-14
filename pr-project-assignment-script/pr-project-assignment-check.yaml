@@ -1,6 +1,6 @@
 name: PR Project Assignment Check
 
-# This workflow checks if the pull request has a project assigned and shows a warning (non-blocking) if no project is found.
+# This workflow checks if the pull request has a project assigned and shows a warning (non-blocking) if no projects are found.
 # 
 # To use this workflow in your repository:
 # 1. Create a .github/workflows directory if it doesn't exist.
@@ -23,4 +23,4 @@ jobs:
       repo_owner: ${{ github.repository_owner }}
       repo_name: ${{ github.event.repository.name }}
       # Optional: Customize the warning message.
-      warning_message: 'No project assigned to this PR. Consider assigning projects if this change should be applied to other versions/releases.'
+      warning_message: 'No projects are assigned to this PR. Consider assigning projects if this change should be applied to other version/release branches.'

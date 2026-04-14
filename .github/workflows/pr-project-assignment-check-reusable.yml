@@ -18,8 +18,8 @@ on:
       warning_message:
         required: false
         type: string
-        description: 'Custom warning message when no project is assigned'
-        default: 'No project assigned to this PR. Consider assigning projects if this change should be applied to other versions/releases.'
+        description: 'Custom warning message when no projects are assigned'
+        default: 'No projects are assigned to this PR. Consider assigning projects if this change should be applied to other version/release branches.'
 
 permissions:
   contents: read
