@@ -21,6 +21,10 @@ on:
         description: 'Custom warning message when no project is assigned'
         default: 'No project assigned to this PR. Consider assigning projects if this change should be applied to other versions/releases.'
 
+permissions:
+  contents: read
+  pull-requests: write
+
 env:
   TERM: xterm
 
@@ -51,6 +55,35 @@ jobs:
           if [[ -z "$projects" ]]; then
             echo "::warning title=No projects assigned::${{ inputs.warning_message }}"
             echo "ℹ️ This is a warning only and will not block the PR."
+            echo "no_projects=true" >> $GITHUB_OUTPUT
           else
             echo "✅ PR is assigned to projects: $projects"
+            echo "no_projects=false" >> $GITHUB_OUTPUT
           fi
+        id: check_projects
+
+      - name: Comment on PR when no projects are assigned
+        if: steps.check_projects.outputs.no_projects == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: '${{ inputs.repo_owner }}',
+              repo: '${{ inputs.repo_name }}',
+              pull_number: ${{ inputs.pr_number }}
+            });
+
+            const comment = `⚠️ @${pr.user.login} ${{ inputs.warning_message }}
+
+            **Please choose one:**
+            - **If this change affects specific versions/releases:** Assign this PR to the appropriate project versions in the sidebar.
+            - **If no project tracking is needed:** React with 👍 on this comment.
+
+            This helps ensure proper change tracking across releases and versions.`;
+
+            await github.rest.issues.createComment({
+              owner: '${{ inputs.repo_owner }}',
+              repo: '${{ inputs.repo_name }}',
+              issue_number: ${{ inputs.pr_number }},
+              body: comment
+            });
