@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+set -e -o pipefail; [[ -n "$DEBUG" ]] && set -x
+
+if [[ $# -ne 3 ]]; then
+    echo "usage: $0 repo_owner repo_name pull_request_id"
+    exit 1
+fi
+
+repo_owner=$1
+repo_name=$2
+pull_request_id=$3
+
+# Get GitHub projects associated with the PR.
+projects_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pullRequestId=$pull_request_id -f query='
+  query($owner: String!, $repoName: String!, $pullRequestId: Int!) {
+    repository(owner: $owner, name: $repoName) {
+      pullRequest(number: $pullRequestId) {
+        projectsV2(first: 100) {
+          nodes {
+            title
+          }
+        }
+      }
+    }
+  }
+')
+
+# Extract project titles and return them as a comma-separated list. If no projects are assigned, this will return an empty string.
+echo $projects_json | jq -r '.data.repository.pullRequest.projectsV2.nodes[].title' | tr '\n' ',' | sed 's/,$//'
