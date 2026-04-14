@@ -29,7 +29,9 @@ To detect **private projects**, you'll need to provide a Personal Access Token w
 3. **Add as repository secret:** Store the token as `PROJECT_READ_TOKEN` in your repository secrets.
 4. **Uncomment the secrets section** in your workflow file (see example in sample workflow).
 
-**Without this optional token:** Only public projects will be detected. Private projects will be ignored, and the workflow will only return public projects assigned to the PR.
+> [!WARNING]
+>
+> **Without this PAT:** Only public projects will be detected. Private projects will be ignored, and the workflow will only return public projects assigned to the PR.
 
 ## Implement the workflow
 
