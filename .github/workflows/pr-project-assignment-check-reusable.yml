@@ -20,6 +20,10 @@ on:
         type: string
         description: 'Custom warning message when no projects are assigned'
         default: 'No projects are assigned to this PR. Consider assigning projects if this change should be applied to other version/release branches.'
+    secrets:
+      PROJECT_TOKEN:
+        required: false
+        description: 'Personal Access Token with read:project scope for private project detection'
 
 permissions:
   contents: read
@@ -32,7 +36,8 @@ jobs:
   check_project_assignment:
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
+      # Use PROJECT_TOKEN if provided (for private projects), otherwise use GITHUB_TOKEN
+      GH_TOKEN: ${{ secrets.PROJECT_TOKEN || github.token }}
     steps:
       - name: Checkout pr-project-assignment scripts
         uses: actions/checkout@v6

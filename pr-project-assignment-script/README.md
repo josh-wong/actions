@@ -16,9 +16,20 @@ The [`.github/workflows/pr-project-assignment-check-reusable.yml`](../.github/wo
 >
 > Supports all GitHub project types:
 >
-> - Organization and repository-level GitHub Projects V2
-> - User-level GitHub Projects V2
-> - Classic project boards (legacy)
+> - Organization and repository-level GitHub Projects V2 (public projects work with default token)
+> - User-level GitHub Projects V2 (requires optional token for private projects)  
+> - Classic project boards (legacy, being deprecated)
+
+### Optional: Private project support
+
+To detect **private projects**, you'll need to provide a Personal Access Token with `read:project` scope:
+
+1. **Create a PAT:** Go to [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens)
+2. **Add `read:project` scope:** This enables access to private projects.
+3. **Add as repository secret:** Store the token as `PROJECT_READ_TOKEN` in your repository secrets.
+4. **Uncomment the secrets section** in your workflow file (see example in sample workflow).
+
+**Without this optional token:** Only public projects will be detected. Private projects will be ignored, and the workflow will only return public projects assigned to the PR.
 
 ## Implement the workflow
 
