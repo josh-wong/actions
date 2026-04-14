@@ -52,8 +52,7 @@ jobs:
           # Get projects assigned to the PR.
           projects=$($SCRIPT_PATH/check_pr_project_assignment "${{ inputs.repo_owner }}" "${{ inputs.repo_name }}" "${{ inputs.pr_number }}")
 
-          echo "DEBUG: Raw projects result: '$projects'"
-          echo "DEBUG: Length of projects result: ${#projects}"
+          echo "DEBUG: All projects found: '$projects'"
 
           if [[ -z "$projects" ]]; then
             echo "::warning title=No projects assigned::${{ inputs.warning_message }}"

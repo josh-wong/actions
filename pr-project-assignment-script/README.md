@@ -12,6 +12,14 @@ The [`.github/workflows/pr-project-assignment-check-reusable.yml`](../.github/wo
 - The repository must have GitHub Projects enabled.
 - The workflow requires `contents: read` and `pull-requests: write` permissions.
 
+> [!NOTE]
+>
+> Supports all GitHub project types:
+>
+> - Organization and repository-level GitHub Projects V2
+> - User-level GitHub Projects V2
+> - Classic project boards (legacy)
+
 ## Implement the workflow
 
 Copy the [`pr-project-assignment-check.yaml`](./pr-project-assignment-check.yaml) file to your repository's `.github/workflows/` directory to automatically check project assignments when PRs are opened.

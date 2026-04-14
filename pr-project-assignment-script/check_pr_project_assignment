@@ -11,8 +11,16 @@ repo_owner=$1
 repo_name=$2
 pull_request_id=$3
 
-# Get GitHub projects associated with the PR.
-projects_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pullRequestId=$pull_request_id -f query='
+# Get GitHub projects associated with the PR using a three-stage approach:
+# 1. Direct association (org/repo Projects V2)
+# 2. Classic project boards 
+# 3. User-level projects (PR as project item)
+
+all_projects=""
+
+# Stage 1: Check for direct ProjectsV2 associations (org/repo projects)
+echo "Checking Projects V2 associations..." >&2
+projects_v2_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pullRequestId=$pull_request_id -f query='
   query($owner: String!, $repoName: String!, $pullRequestId: Int!) {
     repository(owner: $owner, name: $repoName) {
       pullRequest(number: $pullRequestId) {
@@ -26,9 +34,73 @@ projects_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pu
   }
 ')
 
-# Debug: Show raw GraphQL response
-echo "DEBUG: Raw GraphQL response:" >&2
-echo $projects_json >&2
+projects_v2=$(echo $projects_v2_json | jq -r '.data.repository.pullRequest.projectsV2.nodes[].title' 2>/dev/null || echo "")
+echo "Projects V2 found: '$projects_v2'" >&2
 
-# Extract project titles and return them as a comma-separated list. If no projects are assigned, this will return an empty string.
-echo $projects_json | jq -r '.data.repository.pullRequest.projectsV2.nodes[].title' | tr '\n' ',' | sed 's/,$//'
+# Stage 2: Check for classic project board associations
+echo "Checking classic project boards..." >&2
+classic_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pullRequestId=$pull_request_id -f query='
+  query($owner: String!, $repoName: String!, $pullRequestId: Int!) {
+    repository(owner: $owner, name: $repoName) {
+      pullRequest(number: $pullRequestId) {
+        projectCards(first: 100) {
+          nodes {
+            project {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+')
+
+classic_projects=$(echo $classic_json | jq -r '.data.repository.pullRequest.projectCards.nodes[].project.name' 2>/dev/null || echo "")
+echo "Classic projects found: '$classic_projects'" >&2
+
+# Stage 3: Search for user-level projects containing this PR as an item
+echo "Checking user-level projects..." >&2
+pr_node_json=$(gh api graphql -F owner=$repo_owner -F repoName=$repo_name -F pullRequestId=$pull_request_id -f query='
+  query($owner: String!, $repoName: String!, $pullRequestId: Int!) {
+    repository(owner: $owner, name: $repoName) {
+      pullRequest(number: $pullRequestId) {
+        id
+        url
+      }
+    }
+  }
+')
+
+pr_node_id=$(echo $pr_node_json | jq -r '.data.repository.pullRequest.id' 2>/dev/null || echo "")
+pr_url=$(echo $pr_node_json | jq -r '.data.repository.pullRequest.url' 2>/dev/null || echo "")
+
+user_projects=""
+if [[ -n "$pr_node_id" && -n "$pr_url" ]]; then
+  # Try to find projects containing this PR URL as content
+  user_json=$(gh api graphql -F prUrl="$pr_url" -f query='
+    query($prUrl: String!) {
+      search(query: $prUrl, type: ISSUE, first: 50) {
+        nodes {
+          ... on ProjectV2Item {
+            project {
+              title
+            }
+            content {
+              ... on PullRequest {
+                url
+              }
+            }
+          }
+        }
+      }
+    }
+  ' 2>/dev/null || echo '{"data":{"search":{"nodes":[]}}}')
+  
+  user_projects=$(echo $user_json | jq -r '.data.search.nodes[]? | select(.content.url == "'$pr_url'") | .project.title' 2>/dev/null || echo "")
+fi
+echo "User projects found: '$user_projects'" >&2
+
+# Combine all found projects
+all_projects=$(printf "%s\n%s\n%s" "$projects_v2" "$classic_projects" "$user_projects" | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+
+echo $all_projects
