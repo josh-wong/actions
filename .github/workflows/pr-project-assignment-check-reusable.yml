@@ -1,84 +1,28 @@
 name: PR Project Assignment Check
 
+# This workflow checks if the pull request has a project assigned and shows a warning (non-blocking) if no projects are found.
+#
+# For instructions on how to implement this workflow in your repository, see https://github.com/josh-wong/actions/blob/main/pr-project-assignment-script/README.md.
+
 on:
-  workflow_call:
-    inputs:
-      pr_number:
-        required: true
-        type: number
-        description: 'Pull request number to check for project assignment'
-      repo_owner:
-        required: true
-        type: string
-        description: 'Repository owner'
-      repo_name:
-        required: true
-        type: string
-        description: 'Repository name'
-      warning_message:
-        required: false
-        type: string
-        description: 'Custom warning message when no projects are assigned'
-        default: 'No projects are assigned to this PR. Consider assigning projects if this change should be applied to other version/release branches.'
-    secrets:
-      PROJECT_TOKEN:
-        required: false
-        description: 'Personal Access Token with read:project scope for private project detection'
+  pull_request:
+    types: [opened, reopened, ready_for_review]
 
 permissions:
   contents: read
+  issues: write
   pull-requests: write
-
-env:
-  TERM: xterm
 
 jobs:
   check_project_assignment:
-    runs-on: ubuntu-latest
-    env:
-      # Use PROJECT_TOKEN if provided (for private projects), otherwise use GITHUB_TOKEN
-      GH_TOKEN: ${{ secrets.PROJECT_TOKEN || github.token }}
-    steps:
-        run: |
-          echo "Checking project assignment for PR #${{ inputs.pr_number }}..."
-
-          # Get projects assigned to the PR.
-          projects=$($SCRIPT_PATH/check_pr_project_assignment "${{ inputs.repo_owner }}" "${{ inputs.repo_name }}" "${{ inputs.pr_number }}")
-
-          echo "DEBUG: All projects found: '$projects'"
-
-          if [[ -z "$projects" ]]; then
-            echo "::warning title=No projects assigned::${{ inputs.warning_message }}"
-            echo "ℹ️ This is a warning only and will not block the PR."
-            echo "no_projects=true" >> $GITHUB_OUTPUT
-          else
-            echo "✅ PR is assigned to projects: $projects"
-            echo "no_projects=false" >> $GITHUB_OUTPUT
-          fi
-        id: check_projects
-
-      - name: Comment on PR when no projects are assigned
-        if: steps.check_projects.outputs.no_projects == 'true'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: pr } = await github.rest.pulls.get({
-              owner: '${{ inputs.repo_owner }}',
-              repo: '${{ inputs.repo_name }}',
-              pull_number: ${{ inputs.pr_number }}
-            });
-
-            const comment = `⚠️ @${pr.user.login} ${{ inputs.warning_message }}
-
-            **Please choose one:**
-            - **If this change affects specific versions/releases:** Assign this PR to the appropriate project versions in the sidebar.
-            - **If no project tracking is needed:** React with 👍 on this comment.
-
-            This helps ensure proper change tracking across releases and versions.`;
-
-            await github.rest.issues.createComment({
-              owner: '${{ inputs.repo_owner }}',
-              repo: '${{ inputs.repo_name }}',
-              issue_number: ${{ inputs.pr_number }},
-              body: comment
-            });
+    # Skip backport PRs (titles starting with "Backport to branch" and branch names that contain the "MAJOR.MINOR-pull-PR_NUMBER" pattern)
+    if: ${{ !(startsWith(github.event.pull_request.title, 'Backport to branch') && contains(github.head_ref, '-pull-')) }}
+    uses: josh-wong/actions/.github/workflows/pr-project-assignment-check-reusable.yaml@main
+    with:
+      pr_number: ${{ github.event.pull_request.number }}
+      repo_owner: ${{ github.repository_owner }}
+      repo_name: ${{ github.event.repository.name }}
+      # Optional: Customize the warning message.
+      warning_message: 'No projects are assigned to this PR. Consider assigning projects if this change should be applied to other version/release branches.'
+    secrets:
+      PROJECT_TOKEN: ${{ secrets.PROJECT_READ_TOKEN }}
