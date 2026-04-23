@@ -39,18 +39,6 @@ jobs:
       # Use PROJECT_TOKEN if provided (for private projects), otherwise use GITHUB_TOKEN
       GH_TOKEN: ${{ secrets.PROJECT_TOKEN || github.token }}
     steps:
-      - name: Checkout pr-project-assignment scripts
-        uses: actions/checkout@v6
-        with:
-          repository: josh-wong/actions
-          sparse-checkout: pr-project-assignment-script
-          ref: main
-          path: pr-project-assignment
-
-      - name: Check for project assignment
-        working-directory: pr-project-assignment
-        env:
-          SCRIPT_PATH: ./pr-project-assignment-script
         run: |
           echo "Checking project assignment for PR #${{ inputs.pr_number }}..."
 

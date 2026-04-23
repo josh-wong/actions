@@ -36,7 +36,3 @@ To detect **private projects**, you'll need to provide a Personal Access Token w
 ## Implement the workflow
 
 Copy the [`pr-project-assignment-check.yaml`](./pr-project-assignment-check.yaml) file to your repository's `.github/workflows/` directory to automatically check project assignments when PRs are opened.
-
-> [!NOTE]
->
-> The [`check_pr_project_assignment`](./check_pr_project_assignment) script queries GitHub's GraphQL API to check for project assignments. You don't need to include it in your repository, unless you want to customize the script for your specific needs.
