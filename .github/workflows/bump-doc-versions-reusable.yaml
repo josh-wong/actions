@@ -1,0 +1,215 @@
+name: Bump doc versions (reusable)
+
+# Reusable workflow: runs `bump-doc-versions` against the calling repository and
+# opens (or updates) a PR with the anchored patch-version rewrites. Called by
+# the internal-repo dispatch caller and the public-repo safety-net caller.
+# See the version-bump-automation design doc §6.2 for the specification.
+
+on:
+  workflow_call:
+    inputs:
+      product:
+        description: 'scalardb | scalardl'
+        required: true
+        type: string
+      repo:
+        description: 'internal | public — selects the file-scope map'
+        required: true
+        type: string
+      minor:
+        description: 'Minor version key: "3.17" or "current"'
+        required: true
+        type: string
+      to:
+        description: 'Target full version X.Y.Z'
+        required: true
+        type: string
+      from:
+        description: 'Source version X.Y.Z. Optional — auto-derived from className (public) or the first anchored match (internal) when omitted.'
+        required: false
+        type: string
+        default: ''
+      base_branch:
+        description: 'Branch to open the PR against (e.g., "3.17" for internal, "main" for public)'
+        required: true
+        type: string
+      head_branch:
+        description: 'Branch that carries the bump commit (e.g., "update-3.17-patch-version-to-3.17.4")'
+        required: true
+        type: string
+      pr_title:
+        description: 'Title of the opened PR'
+        required: true
+        type: string
+      pr_body_style:
+        description: 'internal | public-safety-net — chooses the PR body template'
+        required: false
+        type: string
+        default: 'internal'
+      dry_run:
+        description: 'If true, run the script but do not commit / push / open a PR'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      github_token:
+        description: 'Token with `contents: write` and `pull-requests: write` on the caller repo. GITHUB_TOKEN works for same-repo operations.'
+        required: true
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Derive the actions repo + ref from `github.workflow_ref` so this same
+      # workflow works whether the caller pins `@main`, `@v1`, or a SHA.
+      - name: Resolve actions repo & ref
+        id: refs
+        env:
+          WFREF: ${{ github.workflow_ref }}
+        run: |
+          # WFREF looks like: owner/repo/.github/workflows/name.yaml@refs/heads/main
+          repo="${WFREF%%/.github/*}"
+          ref="${WFREF##*@}"
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref"   >> "$GITHUB_OUTPUT"
+          echo "Using script source: $repo @ $ref"
+
+      - name: Checkout bump-doc-versions script
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.refs.outputs.repo }}
+          ref: ${{ steps.refs.outputs.ref }}
+          sparse-checkout: bump-doc-versions
+          path: actions-tools
+
+      - name: Checkout target repo at base_branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.base_branch }}
+          fetch-depth: 0
+          token: ${{ secrets.github_token }}
+          path: repo
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run bump-doc-versions
+        id: bump
+        working-directory: repo
+        env:
+          PRODUCT:   ${{ inputs.product }}
+          REPO_KIND: ${{ inputs.repo }}
+          MINOR:     ${{ inputs.minor }}
+          TO:        ${{ inputs.to }}
+          FROM:      ${{ inputs.from }}
+          DRY_RUN:   ${{ inputs.dry_run }}
+        run: |
+          # Build the command as an array so no user-controlled string is
+          # interpolated into a shell string.
+          cmd=(node ../actions-tools/bump-doc-versions/bump-doc-versions.mjs
+            --product "$PRODUCT"
+            --repo    "$REPO_KIND"
+            --minor   "$MINOR"
+            --to      "$TO"
+            --json-report /tmp/bump-report.json)
+          if [ -n "$FROM" ]; then cmd+=(--from "$FROM"); fi
+          if [ "$DRY_RUN" = "true" ]; then cmd+=(--dry-run); fi
+
+          set +e
+          "${cmd[@]}"
+          ec=$?
+          set -e
+          echo "exit_code=$ec" >> "$GITHUB_OUTPUT"
+          # We do not fail here; downstream steps interpret the exit code.
+
+      - name: No-op (exit 2)
+        if: steps.bump.outputs.exit_code == '2'
+        run: echo "::notice::bump-doc-versions found nothing to change (idempotent no-op)."
+
+      - name: Validation error (exit 3)
+        if: steps.bump.outputs.exit_code == '3'
+        run: |
+          echo "::error::bump-doc-versions reported a validation error (exit 3). See the previous step for details."
+          exit 1
+
+      - name: Unexpected error
+        if: >-
+          steps.bump.outputs.exit_code != '0' &&
+          steps.bump.outputs.exit_code != '2' &&
+          steps.bump.outputs.exit_code != '3'
+        run: |
+          echo "::error::bump-doc-versions exited with code ${{ steps.bump.outputs.exit_code }}."
+          exit 1
+
+      - name: Build PR body
+        if: steps.bump.outputs.exit_code == '0' && !inputs.dry_run
+        working-directory: repo
+        env:
+          BODY_STYLE: ${{ inputs.pr_body_style }}
+        run: |
+          node ../actions-tools/bump-doc-versions/build-pr-body.mjs \
+            --report /tmp/bump-report.json \
+            --out    /tmp/pr-body.md \
+            --style  "$BODY_STYLE"
+
+      - name: Commit, push, open/update PR
+        if: steps.bump.outputs.exit_code == '0' && !inputs.dry_run
+        working-directory: repo
+        env:
+          GH_TOKEN:    ${{ secrets.github_token }}
+          BASE_BRANCH: ${{ inputs.base_branch }}
+          HEAD_BRANCH: ${{ inputs.head_branch }}
+          PR_TITLE:    ${{ inputs.pr_title }}
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git checkout -B "$HEAD_BRANCH"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "::notice::Working tree has no changes after script (branch already up to date)."
+            exit 0
+          fi
+          git commit -m "$PR_TITLE"
+          git push --force-with-lease origin "$HEAD_BRANCH"
+
+          existing_pr=$(gh pr list \
+            --head "$HEAD_BRANCH" \
+            --base "$BASE_BRANCH" \
+            --state open \
+            --json number \
+            --jq '.[0].number' || echo "")
+          if [ -n "$existing_pr" ]; then
+            echo "::notice::Updating existing PR #$existing_pr"
+            gh pr edit "$existing_pr" \
+              --title "$PR_TITLE" \
+              --body-file /tmp/pr-body.md
+          else
+            gh pr create \
+              --base  "$BASE_BRANCH" \
+              --head  "$HEAD_BRANCH" \
+              --title "$PR_TITLE" \
+              --body-file /tmp/pr-body.md
+          fi
+
+      - name: Upload JSON report
+        if: always() && steps.bump.outputs.exit_code != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: bump-doc-versions-report
+          path: /tmp/bump-report.json
+          if-no-files-found: ignore
+
+      - name: Dry-run summary
+        if: inputs.dry_run
+        run: |
+          echo "::notice::Dry run complete. No commit, push, or PR was created."
+          if [ -f /tmp/bump-report.json ]; then
+            echo "----- bump-report.json -----"
+            cat /tmp/bump-report.json
+          fi

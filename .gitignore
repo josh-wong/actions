@@ -6,3 +6,6 @@ test/temp/
 .translation-prompt.txt
 coverage/
 .DS_store
+
+# Working scratch directory (design docs, notes, etc.)
+tmp/
