@@ -33,6 +33,15 @@ Automatically translates English documentation to Japanese using Claude Code Git
 | **Location**    | [`auto-translate-markdown-script/`](./auto-translate-markdown-script/) |
 | **Setup guide** | [View documentation](./auto-translate-markdown-script/README.md)       |
 
+### 🔢 Bump doc versions
+
+Anchored, scope-limited patch-version bumper for the ScalarDB and ScalarDL docs. Rewrites Maven/Gradle coordinates, Docker image tags, Javadoc URLs, GitHub release-tag URLs, JAR filenames, and shell env vars across the internal source-of-truth repo and its public docs-site mirror. Opens a PR for a human to review — never auto-merges.
+
+| Field           | Details                                                                |
+|-----------------|------------------------------------------------------------------------|
+| **Location**    | [`bump-doc-versions/`](./bump-doc-versions/)                           |
+| **Setup guide** | [View documentation](./bump-doc-versions/README.md)                    |
+
 ## 🚀 Getting started
 
 Follow these simple steps to integrate any of these actions into your repository.
@@ -52,6 +61,7 @@ For detailed setup and usage instructions, see the individual README files:
 - **[`auto-translate-markdown-script/README.md`](./auto-translate-markdown-script/README.md):** Translation workflow setup
 - **[`auto-docs-script/README.md`](./auto-docs-script/README.md):** Documentation generation
 - **[`auto-pr-script/README.md`](./auto-pr-script/README.md):** PR automation
+- **[`bump-doc-versions/README.md`](./bump-doc-versions/README.md):** ScalarDB/ScalarDL patch-version bump automation
 
 ## 🛠️ Development
 

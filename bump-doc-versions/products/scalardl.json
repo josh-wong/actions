@@ -1,0 +1,20 @@
+{
+  "product": "scalardl",
+  "envVarPrefixes": [
+    "SCALAR_DL_VERSION",
+    "SCALAR_DL_AUDITOR_VERSION"
+  ],
+  "mavenArtifacts": [
+    "scalardl-java-client-sdk",
+    "scalardl-common"
+  ],
+  "mavenArtifactsRegex": [],
+  "ghcrImages": [
+    "scalardl-ledger",
+    "scalardl-auditor"
+  ],
+  "releaseRepos": [
+    "scalardl"
+  ],
+  "jarBases": []
+}

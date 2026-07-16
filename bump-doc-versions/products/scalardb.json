@@ -1,0 +1,35 @@
+{
+  "product": "scalardb",
+  "envVarPrefixes": [
+    "SCALAR_DB_CLUSTER_VERSION",
+    "SCALAR_DB_VERSION"
+  ],
+  "mavenArtifacts": [
+    "scalardb",
+    "scalardb-cluster-java-client-sdk",
+    "scalardb-cluster-common",
+    "scalardb-cluster-rpc",
+    "scalardb-cluster-embedding-java-client-sdk",
+    "scalardb-sql",
+    "scalardb-sql-jdbc",
+    "scalardb-sql-spring-data"
+  ],
+  "mavenArtifactsRegex": [
+    "scalardb-analytics-spark-all-\\d+\\.\\d+_\\d+\\.\\d+"
+  ],
+  "ghcrImages": [
+    "scalardb-cluster-node-byol-premium",
+    "scalardb-cluster-node-byol-standard",
+    "scalardb-cluster-node-with-abac-byol-premium",
+    "scalardb-cluster-schema-loader",
+    "scalardb-cluster-sql-cli",
+    "scalardb-analytics-cli"
+  ],
+  "releaseRepos": [
+    "scalardb"
+  ],
+  "jarBases": [
+    "scalardb-cluster-schema-loader",
+    "scalardb-cluster-sql-cli"
+  ]
+}
