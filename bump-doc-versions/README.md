@@ -44,9 +44,9 @@ node bump-doc-versions/bump-doc-versions.mjs \
 |---|---|---|
 | `--product` | yes | `scalardb` or `scalardl`. Selects the product config file under `products/`. |
 | `--repo` | yes | `internal` or `public`. Selects the file-scope map (see below). |
-| `--minor` | yes | `3.17`, `3.18`, …, or `current` (only valid with `--repo public`). |
-| `--to` | yes | New patch version to bump to (e.g., `3.18.2`). Must satisfy `X.Y === --minor` (or `X.Y === current-minor` when `--minor current`). |
-| `--from` | no | Current patch version to bump from (e.g., `3.18.1`). Auto-detected from `className` (in the docs site config) or the first anchored match under `docs/en-us/**` (in the internal repo) when omitted. Errors out if the auto-detection is ambiguous. |
+| `--minor` | yes | Scope selector. On `--repo public`: `X.Y` (e.g., `3.17`) or `current`. On `--repo internal`: any string — typically the branch name (`3.17`, `main`, `3`). Used as a label on internal (PR title / report); the actual match filter is driven by `--from`. |
+| `--to` | yes | New version to bump to (e.g., `3.17.4` for a patch, `3.19.0` for a minor, `4.0.0` for a major). Must satisfy `X.Y === --minor` on `--repo public`; may differ on `--repo internal` (cross-minor bumps are allowed there). |
+| `--from` | no | Current version to bump from (e.g., `3.17.3`). Auto-detected from `className` (public repo) or the first anchored match under `docs/en-us/**` (internal repo, `--minor` in `X.Y` form) when omitted. **Required for cross-minor bumps** on internal. Errors out if the auto-detection is ambiguous. |
 | `--root` | no | Root of the target repo. Defaults to `.`. |
 | `--dry-run` | no | Do not write files or update `className`. Report only. |
 | `--json-report <path>` | no | Write a machine-readable report to `<path>`. |
@@ -91,7 +91,9 @@ All ten patterns are enumerated in the design doc. In short:
 | `P9` | Analytics Spark trailing version | `com.scalar-labs:scalardb-analytics-spark-all-3.5_2.12:3.17.2` (via `mavenArtifactsRegex`) |
 | `P10` | Bare `X.Y.Z` in prose | `"ScalarDB 3.16.5, 3.17.3, or 3.18.0"` — gated on the file having at least one P1–P9 same-minor match |
 
-**Scope guard:** for every pattern except P10, only occurrences where `X.Y === --minor` are rewritten. On the `3.17` branch, `3.16.5` and `3.18.0` in a prose line are left alone.
+**Scope guard:** for every pattern except P10, only occurrences where `X.Y === --from`'s X.Y are rewritten (i.e., the source minor). For a same-minor patch bump on the `3.17` branch, `3.16.5` and `3.18.0` in a prose line are left alone. For a cross-minor bump (e.g., `--from 3.18.5 --to 3.19.0` on `main`), all `3.18.X` references get rewritten to `3.19.0`, while `3.17.X` and `3.19.X` mentions are left alone.
+
+**Cross-minor bumps** (minor or major): the script logs a `⚠️ cross-minor bump` warning and the generated PR body includes the same warning banner. `--from` must be provided explicitly — auto-detection only supports same-minor bumps.
 
 ### Ignore markers
 
@@ -113,7 +115,7 @@ The reusable workflow lives at [`.github/workflows/bump-doc-versions-reusable.ya
 
 See [`sample-usage.yaml`](./sample-usage.yaml) for ready-to-copy caller workflows:
 
-- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo, or a manual `workflow_dispatch`, and runs the reusable workflow against the matching version branch. The target minor is derived from `github.event.client_payload.minor` (for the automated flow) or `github.ref_name` (for manual dispatch — whatever branch you select in the **"Use workflow from"** dropdown). For the manual path to work, this file must be present on every active version branch (`3.14`, `3.15`, …, `3.18`) in addition to `main`.
+- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo (patch bumps only) or a manual `workflow_dispatch` (patch, minor, or major bumps). The target minor is derived from `github.event.client_payload.minor` (automated flow), an optional `minor` input (explicit override), or `github.ref_name` (branch selected in the **"Use workflow from"** dropdown), in that order. For the manual path to work from a version branch, this file must be present on every active version branch (`3.14`, `3.15`, …, `3.18`) in addition to `main` (and `3` if you use that for the next-minor line).
 - **Public repo caller** — `docs-scalardb/.github/workflows/trigger-version-bump.yml`. Detects a `className` change in `docusaurus.config.js` on push to `main`, extracts `(minor, from, to)`, `repository_dispatch`es into the internal repo, and runs a safety-net bump on the public repo itself.
 
 ### Tokens

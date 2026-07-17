@@ -131,13 +131,17 @@ jobs:
 
 ---
 # ─── ②  Internal repo: docs-internal-<PRODUCT>/.github/workflows/bump-doc-versions.yml
-# Runs on repository_dispatch from the public repo, or on manual
-# workflow_dispatch. Targets the matching version branch and opens a PR
-# against it. For workflow_dispatch to work from a version branch, this
-# file must exist on every active version branch (e.g., 3.14–3.18) — the
-# 'Use workflow from' dropdown then supplies the minor via github.ref_name.
+# Runs on repository_dispatch from the public repo (patch bumps only),
+# or on manual workflow_dispatch (patch, minor, and major bumps).
+#
+# For workflow_dispatch to work from a version branch, this file must
+# exist on every active version branch (e.g., 3.14–3.18) — the "Use
+# workflow from" dropdown then supplies the minor via github.ref_name.
+# For minor / major bumps (which have no version branch yet), dispatch
+# from `main` (major) or `3` (next minor) and provide the optional
+# `minor` input to label the PR (e.g., "3.19" or "4.0").
 
-name: 🔢 Bump patch version in docs
+name: 🔢 Bump version references in docs
 
 on:
   repository_dispatch:
@@ -145,11 +149,16 @@ on:
   workflow_dispatch:
     inputs:
       to:
-        description: 'New patch version to bump to (e.g., "3.18.2"). This is the version the docs will now reference.'
+        description: 'New version to bump to (e.g., "3.17.4" for a patch, "3.19.0" for a minor, "4.0.0" for a major)'
         required: true
         type: string
       from:
-        description: 'Current patch version to bump from (e.g., "3.18.1"). Optional: Auto-detected from `className` (in the docs site config) or the first anchored match (in this repo) when omitted.'
+        description: 'Current version to bump from (e.g., "3.17.3"). Optional for patch bumps (auto-detected from an anchored match in this repo); required for minor / major bumps.'
+        required: false
+        type: string
+        default: ''
+      minor:
+        description: 'Target minor label for the PR title (e.g., "3.19" or "4.0"). Optional — defaults to the branch selected in "Use workflow from" when that branch is X.Y form.'
         required: false
         type: string
         default: ''
@@ -164,17 +173,36 @@ permissions:
   pull-requests: write
 
 jobs:
+  guard:
+    # Reject workflow_dispatch runs from a non-X.Y branch (e.g. `main`, `3`)
+    # unless an explicit `minor` label override is provided. Skipped on
+    # repository_dispatch (client_payload always carries `minor`).
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate dispatch context
+        env:
+          MINOR_INPUT: ${{ inputs.minor }}
+        run: |
+          if [ -n "$MINOR_INPUT" ]; then exit 0; fi
+          if ! [[ "${GITHUB_REF_NAME}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Dispatched from '${GITHUB_REF_NAME}', which isn't a version branch (X.Y). Either pick a version branch from the 'Use workflow from' dropdown, or provide the 'minor' input as an explicit target-minor label (e.g., '3.19' or '4.0')."
+            exit 1
+          fi
+
   bump:
+    needs: [guard]
+    if: always() && (needs.guard.result == 'success' || needs.guard.result == 'skipped')
     uses: josh-wong/actions/.github/workflows/bump-doc-versions-reusable.yaml@main
     with:
       product:     <PRODUCT>
       repo:        internal
-      minor:       ${{ github.event.client_payload.minor || github.ref_name }}
+      minor:       ${{ github.event.client_payload.minor || inputs.minor || github.ref_name }}
       to:          ${{ github.event.client_payload.to    || inputs.to }}
       from:        ${{ github.event.client_payload.from  || inputs.from }}
-      base_branch: ${{ github.event.client_payload.minor || github.ref_name }}
-      head_branch: update-${{ github.event.client_payload.minor || github.ref_name }}-patch-version-to-${{ github.event.client_payload.to || inputs.to }}
-      pr_title: "[${{ github.event.client_payload.minor || github.ref_name }}] Change patch version from `${{ github.event.client_payload.from || inputs.from }}` to `${{ github.event.client_payload.to || inputs.to }}`"
+      base_branch: ${{ github.ref_name }}
+      head_branch: update-${{ github.event.client_payload.minor || inputs.minor || github.ref_name }}-version-to-${{ github.event.client_payload.to || inputs.to }}
+      pr_title: "[${{ github.event.client_payload.minor || inputs.minor || github.ref_name }}] Update version references from `${{ github.event.client_payload.from || inputs.from }}` to `${{ github.event.client_payload.to || inputs.to }}`"
       pr_body_style: internal
       dry_run: ${{ inputs.dry_run || false }}
     secrets:
