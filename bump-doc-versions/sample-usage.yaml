@@ -153,12 +153,12 @@ on:
         required: true
         type: string
       from:
-        description: 'Current version to bump from (e.g., "3.17.3"). Optional for patch bumps (auto-detected from an anchored match in this repo); required for minor / major bumps.'
+        description: 'Current version to bump from (e.g., "3.17.3"). REQUIRED when dispatching from "main" or "3" (cross-minor bumps); auto-detected otherwise from an anchored match in this repo.'
         required: false
         type: string
         default: ''
       minor:
-        description: 'Target minor label for the PR title (e.g., "3.19" or "4.0"). Optional — defaults to the branch selected in "Use workflow from" when that branch is X.Y form.'
+        description: 'Target minor label for the PR title (e.g., "3.19" or "4.0"). REQUIRED when dispatching from "main" or "3"; auto-derived otherwise from the "Use workflow from" branch name.'
         required: false
         type: string
         default: ''
@@ -174,21 +174,37 @@ permissions:
 
 jobs:
   guard:
-    # Reject workflow_dispatch runs from a non-X.Y branch (e.g. `main`, `3`)
-    # unless an explicit `minor` label override is provided. Skipped on
-    # repository_dispatch (client_payload always carries `minor`).
+    # Validates workflow_dispatch inputs against the branch you dispatched from.
+    # Two cases:
+    #   1. Dispatched from an X.Y branch (3.14, …, 3.18): same-minor patch bump.
+    #      Both `minor` and `from` are optional — the script auto-derives them.
+    #   2. Dispatched from a non-X.Y branch (`main`, `3`): cross-minor bump.
+    #      Both `minor` and `from` are required — the branch dropdown carries
+    #      no version info, and auto-detection can't tell 3.18 apart from 3.19.
+    # Skipped on repository_dispatch (client_payload always carries `minor`).
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Validate dispatch context
         env:
           MINOR_INPUT: ${{ inputs.minor }}
+          FROM_INPUT:  ${{ inputs.from }}
         run: |
-          if [ -n "$MINOR_INPUT" ]; then exit 0; fi
-          if ! [[ "${GITHUB_REF_NAME}" =~ ^[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Dispatched from '${GITHUB_REF_NAME}', which isn't a version branch (X.Y). Either pick a version branch from the 'Use workflow from' dropdown, or provide the 'minor' input as an explicit target-minor label (e.g., '3.19' or '4.0')."
-            exit 1
+          # Case 1: X.Y branch — always valid.
+          if [[ "${GITHUB_REF_NAME}" =~ ^[0-9]+\.[0-9]+$ ]]; then
+            exit 0
           fi
+          # Case 2: non-X.Y branch — both `minor` and `from` are required.
+          problems=0
+          if [ -z "$MINOR_INPUT" ]; then
+            echo "::error::'minor' input is required when dispatching from '${GITHUB_REF_NAME}'. Provide an explicit target-minor label (e.g., '3.19' or '4.0')."
+            problems=1
+          fi
+          if [ -z "$FROM_INPUT" ]; then
+            echo "::error::'from' input is required when dispatching from '${GITHUB_REF_NAME}' (cross-minor bumps can't auto-detect the source version). Provide the current source version (e.g., '3.17.3')."
+            problems=1
+          fi
+          exit $problems
 
   bump:
     needs: [guard]
