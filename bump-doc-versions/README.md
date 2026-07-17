@@ -113,17 +113,17 @@ The reusable workflow lives at [`.github/workflows/bump-doc-versions-reusable.ya
 
 See [`sample-usage.yaml`](./sample-usage.yaml) for ready-to-copy caller workflows:
 
-- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo, or a manual `workflow_dispatch`, and runs the reusable workflow against the matching version branch.
+- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo, or a manual `workflow_dispatch`, and runs the reusable workflow against the matching version branch. The target minor is derived from `github.event.client_payload.minor` (for the automated flow) or `github.ref_name` (for manual dispatch — whatever branch you select in the **"Use workflow from"** dropdown). For the manual path to work, this file must be present on every active version branch (`3.14`, `3.15`, …, `3.18`) in addition to `main`.
 - **Public repo caller** — `docs-scalardb/.github/workflows/trigger-version-bump.yml`. Detects a `className` change in `docusaurus.config.js` on push to `main`, extracts `(minor, from, to)`, `repository_dispatch`es into the internal repo, and runs a safety-net bump on the public repo itself.
 
 ### Tokens
 
-The reusable workflow accepts one secret, `github_token`, with the following required permissions on the caller repo:
+The reusable workflow accepts one secret, `token`, with the following required permissions on the caller repo:
 
 - `contents: write` — to push the bump commit.
 - `pull-requests: write` — to open or update the PR.
 
-For **same-repo operations** (the internal caller pushing a bump PR to its own repo), the built-in `GITHUB_TOKEN` is sufficient — pass it via `secrets: inherit` or `github_token: ${{ secrets.GITHUB_TOKEN }}`.
+For **same-repo operations** (the internal caller pushing a bump PR to its own repo), the built-in `GITHUB_TOKEN` is sufficient — pass it via `secrets: inherit` or `token: ${{ secrets.GITHUB_TOKEN }}`.
 
 For the **cross-repo `repository_dispatch`** in the public-repo caller, a personal access token (or GitHub App installation token) with `contents: write` on the target internal repo is required. Store it as `BUMP_DISPATCH_PAT` in the public repo's secrets. See `sample-usage.yaml` for the exact usage.
 

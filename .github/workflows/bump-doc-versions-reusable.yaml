@@ -52,8 +52,8 @@ on:
         type: boolean
         default: false
     secrets:
-      github_token:
-        description: 'Token with `contents: write` and `pull-requests: write` on the caller repo. GITHUB_TOKEN works for same-repo operations.'
+      token:
+        description: 'Token with `contents: write` and `pull-requests: write` on the caller repo. The built-in `GITHUB_TOKEN` works for same-repo operations.'
         required: true
 
 jobs:
@@ -90,7 +90,7 @@ jobs:
         with:
           ref: ${{ inputs.base_branch }}
           fetch-depth: 0
-          token: ${{ secrets.github_token }}
+          token: ${{ secrets.token }}
           path: repo
 
       - name: Set up Node.js
@@ -161,7 +161,7 @@ jobs:
         if: steps.bump.outputs.exit_code == '0' && !inputs.dry_run
         working-directory: repo
         env:
-          GH_TOKEN:    ${{ secrets.github_token }}
+          GH_TOKEN:    ${{ secrets.token }}
           BASE_BRANCH: ${{ inputs.base_branch }}
           HEAD_BRANCH: ${{ inputs.head_branch }}
           PR_TITLE:    ${{ inputs.pr_title }}

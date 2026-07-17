@@ -110,7 +110,7 @@ jobs:
       pr_title:    "chore: bump ${{ matrix.bump.from }} → ${{ matrix.bump.to }} (safety net)"
       pr_body_style: public-safety-net
     secrets:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+      token: ${{ secrets.GITHUB_TOKEN }}
 
   manual:
     if: github.event_name == 'workflow_dispatch'
@@ -126,12 +126,15 @@ jobs:
       pr_title:    "chore: bump ${{ inputs.from }} → ${{ inputs.to }} (manual)"
       pr_body_style: public-safety-net
     secrets:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+      token: ${{ secrets.GITHUB_TOKEN }}
 
 ---
-# ─── ②  Internal repo: docs-internal-scalardb/.github/workflows/bump-doc-versions.yml
-# Runs on repository_dispatch from the public repo, or on manual workflow_dispatch.
-# Targets the matching version branch and opens a PR against it.
+# ─── ②  Internal repo: docs-internal-<PRODUCT>/.github/workflows/bump-doc-versions.yml
+# Runs on repository_dispatch from the public repo, or on manual
+# workflow_dispatch. Targets the matching version branch and opens a PR
+# against it. For workflow_dispatch to work from a version branch, this
+# file must exist on every active version branch (e.g., 3.14–3.18) — the
+# 'Use workflow from' dropdown then supplies the minor via github.ref_name.
 
 name: 🔢 Bump patch version in docs
 
@@ -140,10 +143,6 @@ on:
     types: [bump-patch]
   workflow_dispatch:
     inputs:
-      minor:
-        description: 'Minor version branch to bump (for example, "3.17")'
-        required: true
-        type: string
       to:
         description: 'New patch version to bump to (e.g., "3.18.2"). This is the version the docs will now reference.'
         required: true
@@ -165,13 +164,13 @@ jobs:
     with:
       product:     <PRODUCT>
       repo:        internal
-      minor:       ${{ github.event.client_payload.minor || inputs.minor }}
+      minor:       ${{ github.event.client_payload.minor || github.ref_name }}
       to:          ${{ github.event.client_payload.to    || inputs.to }}
       from:        ${{ github.event.client_payload.from  || inputs.from }}
-      base_branch: ${{ github.event.client_payload.minor || inputs.minor }}
-      head_branch: update-${{ github.event.client_payload.minor || inputs.minor }}-patch-version-to-${{ github.event.client_payload.to || inputs.to }}
-      pr_title: "[${{ github.event.client_payload.minor || inputs.minor }}] Change patch version from `${{ github.event.client_payload.from || inputs.from }}` to `${{ github.event.client_payload.to || inputs.to }}`"
+      base_branch: ${{ github.event.client_payload.minor || github.ref_name }}
+      head_branch: update-${{ github.event.client_payload.minor || github.ref_name }}-patch-version-to-${{ github.event.client_payload.to || inputs.to }}
+      pr_title: "[${{ github.event.client_payload.minor || github.ref_name }}] Change patch version from `${{ github.event.client_payload.from || inputs.from }}` to `${{ github.event.client_payload.to || inputs.to }}`"
       pr_body_style: internal
       dry_run: ${{ inputs.dry_run || false }}
     secrets:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
+      token: ${{ secrets.GITHUB_TOKEN }}
