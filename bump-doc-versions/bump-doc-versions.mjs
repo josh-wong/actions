@@ -64,7 +64,17 @@ async function main() {
   const cfgPath = path.join(__dirname, 'products', `${values.product}.json`);
   const config = JSON.parse(await fs.readFile(cfgPath, 'utf8'));
 
+  const toMinor = `${toParts[0]}.${toParts[1]}`;
+
   // ── Resolve effectiveMinor (handles --minor current) ──────────────────────
+  //
+  // `--minor` semantics differ by --repo:
+  //   - public: must be an existing versioned entry ('X.Y') or 'current'.
+  //     Public bumps are always same-minor (patch bumps against a fixed
+  //     versioned_docs/version-X.Y/ folder or the current-minor docs).
+  //   - internal: any string is accepted (branch name, e.g., '3.17', 'main',
+  //     or '3'). Used only as a label for the PR title / report. The actual
+  //     match-filter for rewrites is driven by --from's X.Y (see below).
   let effectiveMinor = values.minor;
   let publicCurrentMinor = null;
   let isCurrent = false;
@@ -82,18 +92,23 @@ async function main() {
       effectiveMinor = publicCurrentMinor;
       isCurrent = true;
     } else {
+      if (!/^\d+\.\d+$/.test(values.minor)) {
+        fail(3, `--minor for --repo public must be 'X.Y' or 'current' (got: ${values.minor})`);
+      }
       isCurrent = values.minor === publicCurrentMinor;
+    }
+    // Public bumps are always same-minor — enforce.
+    if (toMinor !== effectiveMinor) {
+      fail(3, `--to ${values.to} has minor ${toMinor}, does not match --minor ${effectiveMinor} (public repo requires same-minor bumps)`);
     }
   } else if (values.minor === 'current') {
     fail(3, `--minor current is only valid with --repo public`);
   }
 
-  const toMinor = `${toParts[0]}.${toParts[1]}`;
-  if (toMinor !== effectiveMinor) {
-    fail(3, `--to ${values.to} has minor ${toMinor}, does not match --minor ${effectiveMinor}`);
-  }
-
   // ── Derive --from if omitted ──────────────────────────────────────────────
+  //
+  // Auto-derivation only makes sense for same-minor bumps. For cross-minor
+  // (minor / major) bumps on internal, --from must be provided explicitly.
   let fromVer = values.from;
   if (!fromVer) {
     if (values.repo === 'public') {
@@ -102,6 +117,12 @@ async function main() {
         fail(3, `Could not derive --from from className for entry ${values.minor}`);
       }
     } else {
+      // On internal, auto-derivation requires --minor to be X.Y form
+      // (so we know what X.Y to scan for). For branch names like 'main' or
+      // '3', the caller must pass --from.
+      if (!/^\d+\.\d+$/.test(values.minor)) {
+        fail(3, `--from is required when --minor is not in X.Y form (got --minor '${values.minor}'). Auto-derivation only supports same-minor bumps on X.Y branches; for cross-minor (minor/major) bumps, pass --from explicitly.`);
+      }
       const derived = await deriveFromInternal(root, effectiveMinor, config);
       if (derived.error) fail(3, derived.error);
       fromVer = derived.version;
@@ -117,13 +138,23 @@ async function main() {
   }
 
   const fromParts = fromVer.split('.');
-  if (fromParts.length !== 3 || `${fromParts[0]}.${fromParts[1]}` !== effectiveMinor) {
-    fail(3, `--from ${fromVer} does not belong to minor ${effectiveMinor}`);
+  if (fromParts.length !== 3 || !fromParts.every((p) => /^\d+$/.test(p))) {
+    fail(3, `--from must be X.Y.Z (got: ${fromVer})`);
   }
+  const sourceMinor = `${fromParts[0]}.${fromParts[1]}`;
+
+  // Cross-minor detection (only meaningful on internal, since public enforces same-minor above).
+  const isCrossMinor = sourceMinor !== toMinor;
+
   if (fromVer === values.to) {
     console.log(`--from and --to are both ${fromVer}; nothing to do.`);
     await maybeWriteEmptyReport(values, effectiveMinor, fromVer);
     process.exit(2);
+  }
+
+  if (isCrossMinor) {
+    console.log(`⚠️  Cross-minor bump: ${sourceMinor} → ${toMinor} (${fromVer} → ${values.to})`);
+    console.log(`   The scope-guard filter uses source minor ${sourceMinor}; ALL ${sourceMinor}.X references in scope will be rewritten. Verify the diff carefully.`);
   }
 
   // ── Walk file scope ───────────────────────────────────────────────────────
@@ -135,6 +166,9 @@ async function main() {
     repo: values.repo,
     minor: effectiveMinor,
     minorRequested: values.minor,
+    sourceMinor,
+    targetMinor: toMinor,
+    crossMinor: isCrossMinor,
     from: fromVer,
     to: values.to,
     dryRun: values['dry-run'],
@@ -149,7 +183,9 @@ async function main() {
 
   for await (const abs of walkScope(root, scopePaths, ignoreMatcher)) {
     const content = await fs.readFile(abs, 'utf8');
-    const { matches, skipped } = matchFile(content, effectiveMinor, config);
+    // Match filter is driven by the source minor (from --from's X.Y),
+    // not by --minor. Same value for patch bumps; differs for minor/major bumps.
+    const { matches, skipped } = matchFile(content, sourceMinor, config);
     const rel = path.relative(root, abs).split(path.sep).join('/');
 
     if (skipped) {
@@ -250,11 +286,18 @@ async function deriveFromInternal(root, minor, config) {
 
 async function maybeWriteEmptyReport(values, minor, fromVer) {
   if (!values['json-report']) return;
+  const fromParts = (fromVer || '').split('.');
+  const toParts = (values.to || '').split('.');
+  const sourceMinor = fromParts.length >= 2 ? `${fromParts[0]}.${fromParts[1]}` : null;
+  const targetMinor = toParts.length >= 2 ? `${toParts[0]}.${toParts[1]}` : null;
   const empty = {
     product: values.product,
     repo: values.repo,
     minor,
     minorRequested: values.minor,
+    sourceMinor,
+    targetMinor,
+    crossMinor: sourceMinor !== null && targetMinor !== null && sourceMinor !== targetMinor,
     from: fromVer,
     to: values.to,
     dryRun: values['dry-run'],
