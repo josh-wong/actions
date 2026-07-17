@@ -63,25 +63,16 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      # Derive the actions repo + ref from `github.workflow_ref` so this same
-      # workflow works whether the caller pins `@main`, `@v1`, or a SHA.
-      - name: Resolve actions repo & ref
-        id: refs
-        env:
-          WFREF: ${{ github.workflow_ref }}
-        run: |
-          # WFREF looks like: owner/repo/.github/workflows/name.yaml@refs/heads/main
-          repo="${WFREF%%/.github/*}"
-          ref="${WFREF##*@}"
-          echo "repo=$repo" >> "$GITHUB_OUTPUT"
-          echo "ref=$ref"   >> "$GITHUB_OUTPUT"
-          echo "Using script source: $repo @ $ref"
-
       - name: Checkout bump-doc-versions script
+        # Pins to the exact commit of the reusable workflow that's running,
+        # so the script version matches the workflow version. github.job_workflow_sha
+        # is set specifically for reusable-workflow jobs and points at the
+        # commit of the reusable workflow file — see
+        # https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/accessing-contextual-information-about-workflow-runs#github-context
         uses: actions/checkout@v4
         with:
-          repository: ${{ steps.refs.outputs.repo }}
-          ref: ${{ steps.refs.outputs.ref }}
+          repository: josh-wong/actions
+          ref: ${{ github.job_workflow_sha }}
           sparse-checkout: bump-doc-versions
           path: actions-tools
 
