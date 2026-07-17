@@ -45,8 +45,8 @@ node bump-doc-versions/bump-doc-versions.mjs \
 | `--product` | yes | `scalardb` or `scalardl`. Selects the product config file under `products/`. |
 | `--repo` | yes | `internal` or `public`. Selects the file-scope map (see below). |
 | `--minor` | yes | `3.17`, `3.18`, …, or `current` (only valid with `--repo public`). |
-| `--to` | yes | Target full version `X.Y.Z`. Must satisfy `X.Y === --minor` (or `X.Y === current-minor` when `--minor current`). |
-| `--from` | no | Source version. Auto-derived from `className` (public) or the first anchored match under `docs/en-us/**` (internal) when omitted. Errors out if the auto-derivation is ambiguous. |
+| `--to` | yes | New patch version to bump to (e.g., `3.18.2`). Must satisfy `X.Y === --minor` (or `X.Y === current-minor` when `--minor current`). |
+| `--from` | no | Current patch version to bump from (e.g., `3.18.1`). Auto-detected from `className` (in the docs site config) or the first anchored match under `docs/en-us/**` (in the internal repo) when omitted. Errors out if the auto-detection is ambiguous. |
 | `--root` | no | Root of the target repo. Defaults to `.`. |
 | `--dry-run` | no | Do not write files or update `className`. Report only. |
 | `--json-report <path>` | no | Write a machine-readable report to `<path>`. |
@@ -62,6 +62,11 @@ node bump-doc-versions/bump-doc-versions.mjs \
 | `1` | Unexpected error. |
 
 ### File-scope map
+
+`--repo` selects which side of the ScalarDB/ScalarDL docs pipeline the script is targeting:
+
+- **`internal`** — the source-of-truth repo (`docs-internal-scalardb`, `docs-internal-scalardl`). One branch per minor version (`3.14`, `3.15`, …, `3.18`). Both English and Japanese docs live side-by-side under `docs/en-us/**` and `docs/ja-jp/**` on the same branch. Bump PRs are opened against the version branch itself.
+- **`public`** — the Docusaurus docs-site repo (`docs-scalardb`, `docs-scalardl`). Single `main` branch containing every version. The `current` minor lives under `docs/**`; older minors live under `versioned_docs/version-<minor>/**`. Japanese translations are mirrored under `i18n/versioned_docs/ja-jp/**`. The `className` field in `docusaurus.config.js` is the source of truth for "current patch of each minor".
 
 | `--repo` | `--minor` | Scope walked |
 |---|---|---|

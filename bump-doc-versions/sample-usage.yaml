@@ -19,15 +19,15 @@ on:
   workflow_dispatch:
     inputs:
       minor:
-        description: 'Minor entry key (e.g. "3.17" or "current")'
+        description: 'Minor version entry to bump (for example, "3.17", or "current" for whichever minor is currently labeled `current`)'
         required: true
         type: string
       to:
-        description: 'Target full version X.Y.Z'
+        description: 'New patch version to bump to (e.g., "3.18.2"). This is the version the docs will now reference.'
         required: true
         type: string
       from:
-        description: 'Optional source version X.Y.Z (auto-derived when omitted)'
+        description: 'Current patch version to bump from (e.g., "3.18.1"). Optional: Auto-detected from `className` (in the docs site config) or the first anchored match (in this repo) when omitted.'
         required: false
         type: string
         default: ''
@@ -141,15 +141,15 @@ on:
   workflow_dispatch:
     inputs:
       minor:
-        description: 'Minor branch (e.g. "3.17")'
+        description: 'Minor version branch to bump (for example, "3.17")'
         required: true
         type: string
       to:
-        description: 'Target full version X.Y.Z'
+        description: 'New patch version to bump to (e.g., "3.18.2"). This is the version the docs will now reference.'
         required: true
         type: string
       from:
-        description: 'Optional source version X.Y.Z'
+        description: 'Current patch version to bump from (e.g., "3.18.1"). Optional: Auto-detected from `className` (in the docs site config) or the first anchored match (in this repo) when omitted.'
         required: false
         type: string
         default: ''
