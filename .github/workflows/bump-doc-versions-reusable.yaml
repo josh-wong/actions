@@ -21,11 +21,11 @@ on:
         required: true
         type: string
       to:
-        description: 'Target full version X.Y.Z'
+        description: 'New patch version to bump to (e.g., "3.18.2"). This is the version the docs will now reference.'
         required: true
         type: string
       from:
-        description: 'Source version X.Y.Z. Optional — auto-derived from className (public) or the first anchored match (internal) when omitted.'
+        description: 'Current patch version to bump from (e.g., "3.18.1"). Optional: Auto-detected from `className` (in the docs site config) or the first anchored match (in this repo) when omitted.'
         required: false
         type: string
         default: ''
