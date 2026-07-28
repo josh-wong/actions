@@ -137,6 +137,31 @@ function scanP10(content, minor) {
   return matches;
 }
 
+// Detects Scalar-specific "placeholder-style" anchors — Maven coords, Docker
+// tags, Javadoc URLs, etc. where the version segment is a `<UPPER_CASE_VAR>`
+// placeholder instead of a concrete X.Y.Z. Used solely to gate P10 (prose
+// enumeration) in tutorial / template files that use placeholders in code
+// blocks and rely on prose like ``for example, `3.17.0` `` to convey the
+// version. Never used to drive rewrites directly.
+const PLACEHOLDER_ANCHOR_REGEXES = [
+  // Maven coordinate: com.scalar-labs:<artifact>:<PLACEHOLDER>
+  /com\.scalar-labs:[^:\s'"`)]+:<[A-Z][A-Z0-9_]*>/,
+  // Docker image with placeholder tag: ghcr.io/scalar-labs/<image>:<PLACEHOLDER>
+  /ghcr\.io\/scalar-labs\/[^:\s'"`)]+:<[A-Z][A-Z0-9_]*>/,
+  // Javadoc URL with placeholder version: javadoc.io/doc/com.scalar-labs/<artifact>/<PLACEHOLDER>
+  /javadoc\.io\/doc\/com\.scalar-labs\/[^/\s'"`)]+\/<[A-Z][A-Z0-9_]*>/,
+  // JAR filename with placeholder version: scalardb-…-<PLACEHOLDER>[-all].jar
+  /(?:scalardb|scalardl)-[^\s'"`)]*<[A-Z][A-Z0-9_]*>[^\s'"`)]*\.jar/,
+  // GitHub release URL with placeholder version
+  /github\.com\/scalar-labs\/[^/\s]+\/releases\/(?:tag|download)\/v?<[A-Z][A-Z0-9_]*>/,
+  // Shell env-var assignment with placeholder value
+  /SCALAR_(?:DB|DL)(?:_CLUSTER)?_VERSION=<[A-Z][A-Z0-9_]*>/,
+];
+
+function hasPlaceholderAnchor(content) {
+  return PLACEHOLDER_ANCHOR_REGEXES.some((rx) => rx.test(content));
+}
+
 /**
  * Match all patterns in a file's content for the given minor.
  * Returns { matches: [{pattern, offset, length, oldStr, oldVer, line}], skipped }
@@ -169,8 +194,13 @@ export function matchFile(content, minor, config) {
   }
   raw.push(...scanP2(content, minor));
 
-  // Gate P10 on having at least one P1–P9 same-minor match in the file
-  if (raw.length > 0) {
+  // Gate P10 on the file containing either:
+  //   (a) at least one P1–P9 same-minor match (a concrete anchored ref), or
+  //   (b) at least one placeholder-style anchor like `com.scalar-labs:foo:<VERSION>`
+  //       (tutorial / template files that convey the version through prose only).
+  // P10's own scope-guard still requires the bare X.Y.Z to match the source minor,
+  // so this loosening only affects _which files_ P10 examines, not _what it rewrites_.
+  if (raw.length > 0 || hasPlaceholderAnchor(content)) {
     const p10 = scanP10(content, minor);
     // Exclude P10 matches that overlap with any P1–P9 match (avoids double-counting
     // the bare X.Y.Z that lives inside an anchored URL / coordinate / etc.)
