@@ -8,7 +8,6 @@
     "scalardl-java-client-sdk",
     "scalardl-common"
   ],
-  "mavenArtifactsRegex": [],
   "ghcrImages": [
     "scalardl-ledger",
     "scalardl-auditor"

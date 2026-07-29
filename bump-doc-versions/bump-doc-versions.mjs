@@ -121,7 +121,7 @@ async function main() {
       // (so we know what X.Y to scan for). For branch names like 'main' or
       // '3', the caller must pass --from.
       if (!/^\d+\.\d+$/.test(values.minor)) {
-        fail(3, `--from is required when --minor is not in X.Y form (got --minor '${values.minor}'). Auto-derivation only supports same-minor bumps on X.Y branches; for cross-minor (minor/major) bumps, pass --from explicitly.`);
+        fail(3, `--from is required when --minor is not in X.Y form (got --minor '${values.minor}'). Auto-derivation only supports same-minor patch bumps on X.Y branches; for cross-version (minor or major) bumps, pass --from explicitly.`);
       }
       const derived = await deriveFromInternal(root, effectiveMinor, config);
       if (derived.error) fail(3, derived.error);
@@ -153,7 +153,7 @@ async function main() {
   }
 
   if (isCrossMinor) {
-    console.log(`⚠️  Cross-minor bump: ${sourceMinor} → ${toMinor} (${fromVer} → ${values.to})`);
+    console.log(`⚠️  Cross-version bump: ${sourceMinor} → ${toMinor} (${fromVer} → ${values.to})`);
     console.log(`   The scope-guard filter uses source minor ${sourceMinor}; ALL ${sourceMinor}.X references in scope will be rewritten. Verify the diff carefully.`);
   }
 
@@ -185,7 +185,7 @@ async function main() {
     const content = await fs.readFile(abs, 'utf8');
     // Match filter is driven by the source minor (from --from's X.Y),
     // not by --minor. Same value for patch bumps; differs for minor/major bumps.
-    const { matches, skipped } = matchFile(content, sourceMinor, config);
+    const { matches, skipped } = matchFile(content, sourceMinor, toMinor, config);
     const rel = path.relative(root, abs).split(path.sep).join('/');
 
     if (skipped) {
@@ -195,10 +195,14 @@ async function main() {
     if (matches.length === 0) continue;
 
     // Apply substitutions in reverse offset order so earlier offsets stay valid.
+    // Most patterns replace `oldVer` (X.Y.Z) with --to inside `oldStr`. P11
+    // (bare X.Y) uses `newVerOverride` (target minor X.Y) instead — otherwise
+    // we'd rewrite "3.17" to the full "3.19.0" instead of "3.19".
     let next = content;
     const patCounts = {};
     for (const m of matches.slice().reverse()) {
-      const replacement = m.oldStr.replace(m.oldVer, values.to);
+      const newVer = m.newVerOverride ?? values.to;
+      const replacement = m.oldStr.replace(m.oldVer, newVer);
       next = next.slice(0, m.offset) + replacement + next.slice(m.offset + m.length);
       patCounts[m.pattern] = (patCounts[m.pattern] || 0) + 1;
     }
