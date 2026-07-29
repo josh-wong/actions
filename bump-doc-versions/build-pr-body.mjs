@@ -29,7 +29,9 @@ async function main() {
 
 function crossMinorBanner(r) {
   if (!r.crossMinor) return '';
-  return `> ⚠️ **Cross-minor bump.** This PR rewrites all \`${r.sourceMinor}.X\` references in scope to \`${r.to}\` (source minor \`${r.sourceMinor}\` → target minor \`${r.targetMinor}\`). Please verify the diff carefully — the scope-guard was relaxed to allow this cross-minor rewrite.\n\n`;
+  return `> [!IMPORTANT]
+>
+> ⚠️ **Cross-version bump.** This PR rewrites all \`${r.sourceMinor}.X\` references in scope to \`${r.to}\` (source minor \`${r.sourceMinor}\` → target minor \`${r.targetMinor}\`). Please verify the diff carefully — the scope-guard was relaxed to allow this cross-version rewrite.\n\n`;
 }
 
 function renderInternal(r) {
@@ -55,7 +57,7 @@ N/A
 
 ## Additional notes
 
-Opened automatically by [\`bump-doc-versions\`](https://github.com/josh-wong/actions/tree/main/bump-doc-versions)${r.crossMinor ? ' via a manual `workflow_dispatch` (cross-minor bump)' : ' in response to a `className` update on `main` of the public docs repo'}.
+Opened automatically by [\`bump-doc-versions\`](https://github.com/josh-wong/actions/tree/main/bump-doc-versions)${r.crossMinor ? ' via a manual `workflow_dispatch` (cross-version bump)' : ' in response to a `className` update on `main` of the public docs repo'}.
 
 ${renderVerification(r)}
 `;
@@ -82,9 +84,9 @@ function renderVerification(r) {
   lines.push(`- **Repo scope:** \`${r.repo}\``);
   lines.push(`- **Minor label:** \`${r.minor}\`${r.minorRequested && r.minorRequested !== r.minor ? ` (requested: \`${r.minorRequested}\`)` : ''}`);
   if (r.crossMinor) {
-    lines.push(`- **Bump kind:** cross-minor (source \`${r.sourceMinor}\` → target \`${r.targetMinor}\`)`);
+    lines.push(`- **Bump kind:** cross-version (source \`${r.sourceMinor}\` → target \`${r.targetMinor}\`)`);
   } else if (r.sourceMinor) {
-    lines.push(`- **Bump kind:** same-minor (\`${r.sourceMinor}\`)`);
+    lines.push(`- **Bump kind:** same-minor patch (\`${r.sourceMinor}\`)`);
   }
   lines.push(`- **From → To:** \`${r.from}\` → \`${r.to}\``);
   lines.push(`- **Dry run:** ${r.dryRun ? 'yes' : 'no'}`);

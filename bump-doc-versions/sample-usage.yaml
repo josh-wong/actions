@@ -153,7 +153,7 @@ on:
         required: true
         type: string
       from:
-        description: 'Current version to bump from (e.g., "3.17.3"). REQUIRED when dispatching from "main" or "3" (cross-minor bumps); auto-detected otherwise from an anchored match in this repo.'
+        description: 'Current version to bump from (e.g., "3.17.3"). REQUIRED when dispatching from "main" or "3" (cross-version bumps); auto-detected otherwise from an anchored match in this repo.'
         required: false
         type: string
         default: ''
@@ -178,7 +178,7 @@ jobs:
     # Two cases:
     #   1. Dispatched from an X.Y branch (3.14, …, 3.18): same-minor patch bump.
     #      Both `minor` and `from` are optional — the script auto-derives them.
-    #   2. Dispatched from a non-X.Y branch (`main`, `3`): cross-minor bump.
+    #   2. Dispatched from a non-X.Y branch (`main`, `3`): cross-version bump.
     #      Both `minor` and `from` are required — the branch dropdown carries
     #      no version info, and auto-detection can't tell 3.18 apart from 3.19.
     # Skipped on repository_dispatch (client_payload always carries `minor`).
@@ -201,7 +201,7 @@ jobs:
             problems=1
           fi
           if [ -z "$FROM_INPUT" ]; then
-            echo "::error::'from' input is required when dispatching from '${GITHUB_REF_NAME}' (cross-minor bumps can't auto-detect the source version). Provide the current source version (e.g., '3.17.3')."
+            echo "::error::'from' input is required when dispatching from '${GITHUB_REF_NAME}' (cross-version bumps can't auto-detect the source version). Provide the current source version (e.g., '3.17.3')."
             problems=1
           fi
           exit $problems

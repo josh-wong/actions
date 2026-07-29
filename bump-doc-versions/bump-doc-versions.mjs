@@ -121,7 +121,7 @@ async function main() {
       // (so we know what X.Y to scan for). For branch names like 'main' or
       // '3', the caller must pass --from.
       if (!/^\d+\.\d+$/.test(values.minor)) {
-        fail(3, `--from is required when --minor is not in X.Y form (got --minor '${values.minor}'). Auto-derivation only supports same-minor bumps on X.Y branches; for cross-minor (minor/major) bumps, pass --from explicitly.`);
+        fail(3, `--from is required when --minor is not in X.Y form (got --minor '${values.minor}'). Auto-derivation only supports same-minor patch bumps on X.Y branches; for cross-version (minor or major) bumps, pass --from explicitly.`);
       }
       const derived = await deriveFromInternal(root, effectiveMinor, config);
       if (derived.error) fail(3, derived.error);
@@ -153,7 +153,7 @@ async function main() {
   }
 
   if (isCrossMinor) {
-    console.log(`⚠️  Cross-minor bump: ${sourceMinor} → ${toMinor} (${fromVer} → ${values.to})`);
+    console.log(`⚠️  Cross-version bump: ${sourceMinor} → ${toMinor} (${fromVer} → ${values.to})`);
     console.log(`   The scope-guard filter uses source minor ${sourceMinor}; ALL ${sourceMinor}.X references in scope will be rewritten. Verify the diff carefully.`);
   }
 

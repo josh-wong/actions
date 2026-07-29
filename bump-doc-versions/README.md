@@ -45,8 +45,8 @@ node bump-doc-versions/bump-doc-versions.mjs \
 | `--product` | yes | `scalardb` or `scalardl`. Selects the product config file under `products/`. |
 | `--repo` | yes | `internal` or `public`. Selects the file-scope map (see below). |
 | `--minor` | yes | Scope selector. On `--repo public`: `X.Y` (e.g., `3.17`) or `current`. On `--repo internal`: any string — typically the branch name (`3.17`, `main`, `3`). Used as a label on internal (PR title / report); the actual match filter is driven by `--from`. |
-| `--to` | yes | New version to bump to (e.g., `3.17.4` for a patch, `3.19.0` for a minor, `4.0.0` for a major). Must satisfy `X.Y === --minor` on `--repo public`; may differ on `--repo internal` (cross-minor bumps are allowed there). |
-| `--from` | no | Current version to bump from (e.g., `3.17.3`). Auto-detected from `className` (public repo) or the first anchored match under `docs/en-us/**` (internal repo, `--minor` in `X.Y` form) when omitted. **Required for cross-minor bumps** on internal. Errors out if the auto-detection is ambiguous. |
+| `--to` | yes | New version to bump to (e.g., `3.17.4` for a patch, `3.19.0` for a minor, `4.0.0` for a major). Must satisfy `X.Y === --minor` on `--repo public`; may differ on `--repo internal` (cross-version bumps are allowed there). |
+| `--from` | no | Current version to bump from (e.g., `3.17.3`). Auto-detected from `className` (public repo) or the first anchored match under `docs/en-us/**` (internal repo, `--minor` in `X.Y` form) when omitted. **Required for cross-version bumps** on internal. Errors out if the auto-detection is ambiguous. |
 | `--root` | no | Root of the target repo. Defaults to `.`. |
 | `--dry-run` | no | Do not write files or update `className`. Report only. |
 | `--json-report <path>` | no | Write a machine-readable report to `<path>`. |
@@ -90,11 +90,11 @@ All eleven patterns are enumerated in the design doc. In short:
 | `P8` | Shell env-var assignment | `SCALAR_DB_CLUSTER_VERSION=3.17.2` |
 | `P9` | Analytics Spark trailing version (only the trailing `X.Y.Z` is rewritten; the embedded `{SPARK}_{SCALA}` segment is left untouched) | `com.scalar-labs:scalardb-analytics-spark-all-3.5_2.12:3.17.2` |
 | `P10` | Bare `X.Y.Z` in prose | `"ScalarDB 3.16.5, 3.17.3, or 3.18.0"` — file-level gate: same-minor P1–P9 hit, placeholder anchor, or minor-density ≥ 3 (see design §6.1.4) |
-| `P11` | Bare `X.Y` in prose (**cross-minor bumps only**) | `"Combination of ScalarDB Cluster 3.17 and client SDK 3.14"` → `"…3.19 and client SDK 3.14"`; same file-level gate as P10 |
+| `P11` | Bare `X.Y` in prose (**cross-version bumps only**) | `"Combination of ScalarDB Cluster 3.17 and client SDK 3.14"` → `"…3.19 and client SDK 3.14"`; same file-level gate as P10 |
 
-**Scope guard:** for every pattern except P11, only occurrences where `X.Y === --from`'s X.Y are rewritten (i.e., the source minor). For a same-minor patch bump on the `3.17` branch, `3.16.5` and `3.18.0` in a prose line are left alone. For a cross-minor bump (e.g., `--from 3.18.5 --to 3.19.0` on `main`), all `3.18.X` references get rewritten to `3.19.0`, while `3.17.X` and `3.19.X` mentions are left alone. P11 additionally rewrites bare source-minor `X.Y` references directly to the target-minor `X.Y`, and only fires on cross-minor bumps (a same-minor P11 would be a no-op that could strip a bare minor down to `X.Y.Z`).
+**Scope guard:** for every pattern except P11, only occurrences where `X.Y === --from`'s X.Y are rewritten (i.e., the source minor). For a same-minor patch bump on the `3.17` branch, `3.16.5` and `3.18.0` in a prose line are left alone. For a cross-version bump (e.g., `--from 3.18.5 --to 3.19.0` on `main`), all `3.18.X` references get rewritten to `3.19.0`, while `3.17.X` and `3.19.X` mentions are left alone. P11 additionally rewrites bare source-minor `X.Y` references directly to the target-minor `X.Y`, and only fires on cross-version bumps (a same-minor P11 would be a no-op that could strip a bare minor down to `X.Y.Z`).
 
-**Cross-minor bumps** (minor or major): the script logs a `⚠️ cross-minor bump` warning and the generated PR body includes the same warning banner. `--from` must be provided explicitly — auto-detection only supports same-minor bumps.
+**Cross-version bumps** (minor or major): the script logs a `⚠️ cross-version bump` warning and the generated PR body includes the same warning as a GitHub `[!IMPORTANT]` admonition. `--from` must be provided explicitly — auto-detection only supports same-minor patch bumps.
 
 ### Ignore markers
 
