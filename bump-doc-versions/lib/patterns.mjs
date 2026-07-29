@@ -137,6 +137,29 @@ function scanP10(content, minor) {
   return matches;
 }
 
+// P11: bare X.Y (no patch component). Fires only on cross-minor bumps —
+// on same-minor patch bumps the source and target X.Y are equal, so any
+// rewrite would be a no-op. The replacement is the target X.Y (e.g. "3.19"),
+// not the full X.Y.Z of --to, so we mark these matches with an explicit
+// `newVerOverride` for the substitution step to use.
+function scanP11(content, sourceMinor, targetMinor) {
+  if (sourceMinor === targetMinor) return [];
+  const rx = new RegExp(`(?<![\\d.])${escRx(sourceMinor)}(?![\\d.])`, 'g');
+  const matches = [];
+  let m;
+  while ((m = rx.exec(content)) !== null) {
+    matches.push({
+      pattern: 'P11',
+      offset: m.index,
+      length: m[0].length,
+      oldStr: m[0],
+      oldVer: sourceMinor,
+      newVerOverride: targetMinor,
+    });
+  }
+  return matches;
+}
+
 // Detects Scalar-specific "placeholder-style" anchors — Maven coords, Docker
 // tags, Javadoc URLs, etc. where the version segment is a `<UPPER_CASE_VAR>`
 // placeholder instead of a concrete X.Y.Z. Used solely to gate P10 (prose
@@ -162,12 +185,70 @@ function hasPlaceholderAnchor(content) {
   return PLACEHOLDER_ANCHOR_REGEXES.some((rx) => rx.test(content));
 }
 
+// Third gate branch: files that are clearly "about" a specific minor even
+// though they contain no anchored (P1–P9) or placeholder patterns —
+// e.g., compatibility matrices, requirements pages, migration guides.
+// If the file mentions the source minor ≥ MIN_MINOR_DENSITY times (in any
+// form — bare X.Y, X.Y.Z, or X.Y.Z-suffix), we consider it version-dense
+// enough that P10 / P11 should examine it.
+const MIN_MINOR_DENSITY = 3;
+
+function hasMinorDensity(content, minor) {
+  const rx = new RegExp(`(?<![\\d.])${escRx(minor)}(?:\\.\\d+)?(?![\\d.])`, 'g');
+  let count = 0;
+  let m;
+  while ((m = rx.exec(content)) !== null) {
+    if (++count >= MIN_MINOR_DENSITY) return true;
+  }
+  return false;
+}
+
+// Markdown table rows (start and end with `|`, allowing whitespace and
+// optional leading indentation) are treated as structural and excluded
+// from all pattern rewrites. Adding a new row for a new minor is a
+// human/structural task; the tool must not rewrite the existing rows.
+const TABLE_ROW_REGEX = /^\s*\|.*\|\s*$/;
+
+function collectTableRowLines(content) {
+  const table = new Set();
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (TABLE_ROW_REGEX.test(lines[i])) table.add(i + 1); // 1-based
+  }
+  return table;
+}
+
+// Section-scoped skip: everything between `<!-- version-bump: skip-section -->`
+// (inclusive) and the matching `<!-- version-bump: end-skip-section -->`
+// (inclusive) is excluded from all pattern rewrites. Used as an escape hatch
+// when the table-row heuristic gets the wrong verdict or when a stretch of
+// non-table content must be left untouched.
+function collectSkipSectionLines(content) {
+  const skipped = new Set();
+  const lines = content.split('\n');
+  let inSection = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (!inSection && lines[i].includes('<!-- version-bump: skip-section -->')) {
+      inSection = true;
+    }
+    if (inSection) skipped.add(i + 1); // 1-based
+    if (inSection && lines[i].includes('<!-- version-bump: end-skip-section -->')) {
+      inSection = false;
+    }
+  }
+  return skipped;
+}
+
 /**
- * Match all patterns in a file's content for the given minor.
- * Returns { matches: [{pattern, offset, length, oldStr, oldVer, line}], skipped }
- * Applies file-level and per-line skip markers.
+ * Match all patterns in a file's content for the given source/target minor pair.
+ * Returns { matches: [{pattern, offset, length, oldStr, oldVer, line, newVerOverride?}], skipped }
+ * Applies file-level, per-line, section, and table-row skip logic.
+ *
+ * For same-minor patch bumps, sourceMinor === targetMinor (P11 becomes a no-op).
+ * For cross-minor (minor/major) bumps, sourceMinor !== targetMinor and P11
+ * rewrites bare X.Y references from source to target.
  */
-export function matchFile(content, minor, config) {
+export function matchFile(content, sourceMinor, targetMinor, config) {
   // File-level skip
   if (content.includes('<!-- version-bump: skip-file -->')) {
     return { matches: [], skipped: 'skip-file' };
@@ -182,7 +263,7 @@ export function matchFile(content, minor, config) {
     while ((m = s.regex.exec(content)) !== null) {
       const xy = m[1];
       const z = m[2];
-      if (xy !== minor) continue;
+      if (xy !== sourceMinor) continue;
       raw.push({
         pattern: s.name,
         offset: m.index,
@@ -192,16 +273,26 @@ export function matchFile(content, minor, config) {
       });
     }
   }
-  raw.push(...scanP2(content, minor));
+  raw.push(...scanP2(content, sourceMinor));
 
-  // Gate P10 on the file containing either:
+  // Gate P10 (and P11) on the file being "about" the source minor. Three
+  // sufficient signals; any one is enough:
   //   (a) at least one P1–P9 same-minor match (a concrete anchored ref), or
   //   (b) at least one placeholder-style anchor like `com.scalar-labs:foo:<VERSION>`
-  //       (tutorial / template files that convey the version through prose only).
-  // P10's own scope-guard still requires the bare X.Y.Z to match the source minor,
-  // so this loosening only affects _which files_ P10 examines, not _what it rewrites_.
-  if (raw.length > 0 || hasPlaceholderAnchor(content)) {
-    const p10 = scanP10(content, minor);
+  //       (tutorial / template files that convey the version through prose only),
+  //   (c) minor-density signal: source-minor mentioned in the file ≥ N times
+  //       (matrix pages, requirements pages, migration guides — high-signal
+  //       files that lack coordinates but are clearly version-specific).
+  // The scope-guards on P10 (X.Y === source-minor) and P11 (bare X.Y ===
+  // source-minor, cross-minor only) still restrict what actually gets rewritten,
+  // so a lenient gate only affects _which files_ are examined.
+  const gateOpen =
+    raw.length > 0 ||
+    hasPlaceholderAnchor(content) ||
+    hasMinorDensity(content, sourceMinor);
+
+  if (gateOpen) {
+    const p10 = scanP10(content, sourceMinor);
     // Exclude P10 matches that overlap with any P1–P9 match (avoids double-counting
     // the bare X.Y.Z that lives inside an anchored URL / coordinate / etc.)
     const covered = intervals(raw);
@@ -210,16 +301,31 @@ export function matchFile(content, minor, config) {
         raw.push(m);
       }
     }
+    // P11 (bare X.Y) — cross-minor bumps only. Exclude matches that overlap
+    // any previously collected match (X.Y is a prefix of X.Y.Z, so we must
+    // avoid double-counting the "3.17" that lives inside "3.17.2").
+    const p11 = scanP11(content, sourceMinor, targetMinor);
+    const coveredWithP10 = intervals(raw);
+    for (const m of p11) {
+      if (!overlapsAny(m.offset, m.offset + m.length, coveredWithP10)) {
+        raw.push(m);
+      }
+    }
   }
 
-  // Attach line numbers (1-based) and apply per-line skip markers.
+  // Attach line numbers (1-based) and apply skip logic: per-line marker,
+  // section markers, and the Markdown-table-row heuristic.
   const lineStarts = computeLineStarts(content);
   const skipLines = collectSkipLines(content);
+  const skipSectionLines = collectSkipSectionLines(content);
+  const tableRowLines = collectTableRowLines(content);
 
   const kept = [];
   for (const m of raw) {
     const line = binarySearchLine(lineStarts, m.offset);
     if (skipLines.has(line)) continue;
+    if (skipSectionLines.has(line)) continue;
+    if (tableRowLines.has(line)) continue;
     kept.push({ ...m, line });
   }
 
