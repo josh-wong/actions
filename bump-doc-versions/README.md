@@ -76,7 +76,7 @@ node bump-doc-versions/bump-doc-versions.mjs \
 
 ### Anchored patterns
 
-All ten patterns are enumerated in the design doc. In short:
+All eleven patterns are enumerated in the design doc. In short:
 
 | ID | What it matches | Example |
 |---|---|---|
@@ -88,10 +88,11 @@ All ten patterns are enumerated in the design doc. In short:
 | `P6` | Javadoc URL | `javadoc.io/doc/com.scalar-labs/scalardb-sql/3.17.2/…` |
 | `P7` | JAR filename | `scalardb-cluster-schema-loader-3.17.2-all.jar` |
 | `P8` | Shell env-var assignment | `SCALAR_DB_CLUSTER_VERSION=3.17.2` |
-| `P9` | Analytics Spark trailing version | `com.scalar-labs:scalardb-analytics-spark-all-3.5_2.12:3.17.2` (via `mavenArtifactsRegex`) |
-| `P10` | Bare `X.Y.Z` in prose | `"ScalarDB 3.16.5, 3.17.3, or 3.18.0"` — gated on the file having at least one P1–P9 same-minor match |
+| `P9` | Analytics Spark trailing version (only the trailing `X.Y.Z` is rewritten; the embedded `{SPARK}_{SCALA}` segment is left untouched) | `com.scalar-labs:scalardb-analytics-spark-all-3.5_2.12:3.17.2` |
+| `P10` | Bare `X.Y.Z` in prose | `"ScalarDB 3.16.5, 3.17.3, or 3.18.0"` — file-level gate: same-minor P1–P9 hit, placeholder anchor, or minor-density ≥ 3 (see design §6.1.4) |
+| `P11` | Bare `X.Y` in prose (**cross-minor bumps only**) | `"Combination of ScalarDB Cluster 3.17 and client SDK 3.14"` → `"…3.19 and client SDK 3.14"`; same file-level gate as P10 |
 
-**Scope guard:** for every pattern except P10, only occurrences where `X.Y === --from`'s X.Y are rewritten (i.e., the source minor). For a same-minor patch bump on the `3.17` branch, `3.16.5` and `3.18.0` in a prose line are left alone. For a cross-minor bump (e.g., `--from 3.18.5 --to 3.19.0` on `main`), all `3.18.X` references get rewritten to `3.19.0`, while `3.17.X` and `3.19.X` mentions are left alone.
+**Scope guard:** for every pattern except P11, only occurrences where `X.Y === --from`'s X.Y are rewritten (i.e., the source minor). For a same-minor patch bump on the `3.17` branch, `3.16.5` and `3.18.0` in a prose line are left alone. For a cross-minor bump (e.g., `--from 3.18.5 --to 3.19.0` on `main`), all `3.18.X` references get rewritten to `3.19.0`, while `3.17.X` and `3.19.X` mentions are left alone. P11 additionally rewrites bare source-minor `X.Y` references directly to the target-minor `X.Y`, and only fires on cross-minor bumps (a same-minor P11 would be a no-op that could strip a bare minor down to `X.Y.Z`).
 
 **Cross-minor bumps** (minor or major): the script logs a `⚠️ cross-minor bump` warning and the generated PR body includes the same warning banner. `--from` must be provided explicitly — auto-detection only supports same-minor bumps.
 

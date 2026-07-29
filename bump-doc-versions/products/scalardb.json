@@ -14,9 +14,6 @@
     "scalardb-sql-jdbc",
     "scalardb-sql-spring-data"
   ],
-  "mavenArtifactsRegex": [
-    "scalardb-analytics-spark-all-\\d+\\.\\d+_\\d+\\.\\d+"
-  ],
   "ghcrImages": [
     "scalardb-cluster-node-byol-premium",
     "scalardb-cluster-node-byol-standard",

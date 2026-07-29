@@ -1,26 +1,26 @@
 // Anchored pattern matcher for bump-doc-versions.
 //
-// Implements P1–P10 from the version-bump-automation design doc §4.1.
+// Implements P1–P11 from the version-bump-automation design doc §4.1.
 // Each match carries { pattern, offset, length, oldStr, oldVer, line } so the caller can
 // apply substitutions in reverse offset order.
 //
-// Scope guard: for every pattern except P10, only rewrites where matched X.Y === --minor.
-// P10 gate: only rewrites bare X.Y.Z if the same file also contains a P1–P9 same-minor match
+// Scope guard: for every pattern except P11, only rewrites where matched X.Y === source-minor.
+// P10 / P11 file-level gate: only rewrites a bare X.Y.Z / X.Y if the same file also contains
+// a concrete P1–P9 same-minor match, a placeholder-style anchor, or has minor-density ≥ 3
 // (per design §6.1.4, which supersedes the tighter same-line wording in §4.1).
 
 const escRx = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * Builds anchored scanners P1, P3, P4, P5, P6, P7, P8 from a product config.
+ * Builds anchored scanners P1, P3–P9 from a product config.
  * Each scanner is { name, regex } where the regex captures (X.Y) in group 1 and (Z) in group 2.
- * P2 and P10 are handled separately because they need context (proximity / file-level gate).
+ * P2, P10, and P11 are handled separately because they need context
+ * (proximity / file-level gate / cross-minor guard).
  */
 export function buildScanners(config) {
-  const mavenParts = [
-    ...(config.mavenArtifacts || []).map(escRx),
-    ...(config.mavenArtifactsRegex || []), // already regex
-  ];
-  const mavenGroup = mavenParts.length ? `(?:${mavenParts.join('|')})` : null;
+  const mavenGroup = (config.mavenArtifacts || []).length
+    ? `(?:${config.mavenArtifacts.map(escRx).join('|')})`
+    : null;
   const ghcrGroup = (config.ghcrImages || []).length
     ? `(?:${config.ghcrImages.map(escRx).join('|')})`
     : null;
@@ -81,6 +81,16 @@ export function buildScanners(config) {
       regex: new RegExp(`${envGroup}=(\\d+\\.\\d+)\\.(\\d+)`, 'g'),
     });
   }
+
+  // P9: analytics-spark trailing version. The `-{SPARK}_{SCALA}` segment
+  // between the artifact and the trailing X.Y.Z is intentionally *not* captured
+  // — only the coord's trailing version is a rewrite target. This is a static
+  // scanner (like P2) because there's exactly one artifact family in this shape
+  // (`scalardb-analytics-spark-all`); a new one would call for a config field.
+  scanners.push({
+    name: 'P9',
+    regex: /com\.scalar-labs:scalardb-analytics-spark-all-\d+\.\d+_\d+\.\d+:(\d+\.\d+)\.(\d+)/g,
+  });
 
   return scanners;
 }
@@ -254,7 +264,7 @@ export function matchFile(content, sourceMinor, targetMinor, config) {
     return { matches: [], skipped: 'skip-file' };
   }
 
-  // Collect P1–P9 matches (P2 handled separately)
+  // Collect P1 and P3–P9 matches (P2 handled separately below)
   const scanners = buildScanners(config);
   const raw = [];
   for (const s of scanners) {
