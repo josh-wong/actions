@@ -116,7 +116,7 @@ The reusable workflow lives at [`.github/workflows/bump-doc-versions-reusable.ya
 
 See [`sample-usage.yaml`](./sample-usage.yaml) for ready-to-copy caller workflows:
 
-- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo (patch bumps only) or a manual `workflow_dispatch` (patch, minor, or major bumps). The target minor is derived from `github.event.client_payload.minor` (automated flow), an optional `minor` input (explicit override), or `github.ref_name` (branch selected in the **"Use workflow from"** dropdown), in that order. For the manual path to work from a version branch, this file must be present on every active version branch (`3.14`, `3.15`, …, `3.18`) in addition to `main` (and `3` if you use that for the next-minor line).
+- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo (patch bumps only) or a manual `workflow_dispatch` (patch, minor, or major bumps). **Lives on `main` only** — every dispatch supplies the target branch as data (either `client_payload.minor` for `repository_dispatch`, which doubles as the version branch name for patch bumps, or the required `target_branch` input for `workflow_dispatch`). No per-version-branch duplication of the caller is needed.
 - **Public repo caller** — `docs-scalardb/.github/workflows/trigger-version-bump.yml`. Detects a `className` change in `docusaurus.config.js` on push to `main`, extracts `(minor, from, to)`, `repository_dispatch`es into the internal repo, and runs a safety-net bump on the public repo itself.
 
 ### Tokens
