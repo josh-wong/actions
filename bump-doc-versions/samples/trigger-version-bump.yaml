@@ -1,0 +1,127 @@
+# Public repo trigger for bump-doc-versions.
+#
+# Copy to `.github/workflows/trigger-version-bump.yml` in the public docs repo
+# (e.g., docs-scalardb, docs-scalardl), replacing <PRODUCT> with `scalardb` or `scalardl`.
+#
+# Fires on any push to `main` that touches `docusaurus.config.js`. Detects a `className` diff, then:
+#   (a) dispatches into the internal repo for the authoritative bump PR, and
+#   (b) runs a safety-net bump against the public repo itself (idempotent; becomes a no-op if the internal sync PR lands first).
+
+name: 🔢 Trigger version bump on className change
+
+on:
+  push:
+    branches: [main]
+    paths: [docusaurus.config.js]
+  workflow_dispatch:
+    inputs:
+      minor:
+        description: 'Minor version entry to bump (e.g., "3.19", or "current" for whichever minor is currently labeled `current`)'
+        required: true
+        type: string
+      to:
+        description: 'New patch version to bump to (e.g., "3.18.2"). This is the version the docs will now reference.'
+        required: true
+        type: string
+      from:
+        description: 'Current patch version to bump from (e.g., "3.18.1"). Optional: Auto-detected from `className` (in the docs site config) or the first anchored match (in this repo) when omitted.'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  detect:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      bumps: ${{ steps.diff.outputs.bumps }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Checkout detect-classname-diff script
+        uses: actions/checkout@v4
+        with:
+          repository: josh-wong/actions
+          ref: main
+          sparse-checkout: bump-doc-versions
+          path: actions-tools
+
+      - name: Extract before/after docusaurus.config.js
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA:  ${{ github.event.after }}
+        run: |
+          git show "$BEFORE_SHA:docusaurus.config.js" > /tmp/before.js 2>/dev/null || : > /tmp/before.js
+          git show "$AFTER_SHA:docusaurus.config.js"  > /tmp/after.js
+
+      - name: Detect className diffs
+        id: diff
+        run: |
+          bumps=$(node actions-tools/bump-doc-versions/detect-classname-diff.mjs \
+            --before /tmp/before.js \
+            --after  /tmp/after.js)
+          echo "bumps=$bumps" >> "$GITHUB_OUTPUT"
+          echo "Detected: $bumps"
+
+  dispatch-internal:
+    needs: detect
+    if: needs.detect.outputs.bumps != '' && needs.detect.outputs.bumps != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        bump: ${{ fromJson(needs.detect.outputs.bumps) }}
+    steps:
+      - name: Dispatch bump into docs-internal-<PRODUCT>
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.BUMP_DISPATCH_PAT }}
+          script: |
+            const bump = ${{ toJson(matrix.bump) }};
+            await github.rest.repos.createDispatchEvent({
+              owner: context.repo.owner,
+              repo:  'docs-internal-<PRODUCT>',
+              event_type: 'bump-patch',
+              client_payload: { product: '<PRODUCT>', ...bump },
+            });
+
+  safety-net-public:
+    needs: detect
+    if: needs.detect.outputs.bumps != '' && needs.detect.outputs.bumps != '[]'
+    strategy:
+      matrix:
+        bump: ${{ fromJson(needs.detect.outputs.bumps) }}
+    uses: josh-wong/actions/.github/workflows/bump-doc-versions-reusable.yaml@main
+    with:
+      product:     <PRODUCT>
+      repo:        public
+      minor:       ${{ matrix.bump.minor }}
+      from:        ${{ matrix.bump.from }}
+      to:          ${{ matrix.bump.to }}
+      base_branch: main
+      head_branch: bump/<PRODUCT>-${{ matrix.bump.to }}
+      pr_title:    "chore: bump ${{ matrix.bump.from }} → ${{ matrix.bump.to }} (safety net)"
+      pr_body_style: public-safety-net
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+
+  manual:
+    if: github.event_name == 'workflow_dispatch'
+    uses: josh-wong/actions/.github/workflows/bump-doc-versions-reusable.yaml@main
+    with:
+      product:     <PRODUCT>
+      repo:        public
+      minor:       ${{ inputs.minor }}
+      from:        ${{ inputs.from }}
+      to:          ${{ inputs.to }}
+      base_branch: main
+      head_branch: bump/<PRODUCT>-${{ inputs.to }}
+      pr_title:    "chore: bump ${{ inputs.from }} → ${{ inputs.to }} (manual)"
+      pr_body_style: public-safety-net
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
