@@ -1,0 +1,112 @@
+# Internal repo caller for bump-doc-versions.
+#
+# Copy to `.github/workflows/bump-doc-versions.yml` in the internal docs repo
+# (e.g., docs-internal-scalardb, docs-internal-scalardl), replacing <PRODUCT> with `scalardb` or `scalardl`.
+#
+# Runs on repository_dispatch from the public repo (patch bumps only), or on manual workflow_dispatch (patch, minor, and major bumps).
+#
+# Lives on `main` only. Every dispatch supplies the target branch as data (either `client_payload.to` for repository_dispatch, or the `target_branch` input for workflow_dispatch), so the workflow never has to be duplicated onto each version branch.
+#
+# Dispatch model at a glance:
+#   - Patch bump (X.Y.Z1 → X.Y.Z2): target_branch = "3.18" (the version branch).
+#   - Minor bump  (3.18.X → 3.19.0): target_branch = "3" (next-minor branch).
+#   - Major bump  (3.18.X → 4.0.0): target_branch = "main".
+#
+# `from` is auto-detected from anchored X.Y.Z matches on the target branch in every case. The PR-title minor label (e.g., `[3.18]`, `[3.19]`, `[4.0]`) is derived from the X.Y prefix of `to`.
+
+name: 🔢 Bump version references in docs
+
+on:
+  repository_dispatch:
+    types: [bump-patch]
+  workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Branch to bump on and open the PR against (e.g., "3.18" for a patch, "3" for a minor, "main" for a major)'
+        required: true
+        type: string
+      to:
+        description: 'New version to bump to (e.g., "3.18.2" for a patch, "3.19.0" for a minor, "4.0.0" for a major). The X.Y prefix of this value is used as the PR-title label.'
+        required: true
+        type: string
+      from:
+        description: 'Override the auto-detected current version (e.g., "3.18.1"). Usually leave empty. The script scans the target branch for the current X.Y.Z. Provide explicitly only when auto-detection is ambiguous (drift) or you need a non-current source.'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Report only; do not commit / push / open PR'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  compute:
+    # Derives the values the reusable workflow needs from the payload/inputs. Emitted as job outputs so the `bump` job body stays readable.
+    runs-on: ubuntu-latest
+    outputs:
+      to:          ${{ steps.derive.outputs.to }}
+      from:        ${{ steps.derive.outputs.from }}
+      minor:       ${{ steps.derive.outputs.minor }}
+      base:        ${{ steps.derive.outputs.base }}
+      from_clause: ${{ steps.derive.outputs.from_clause }}
+    steps:
+      - id: derive
+        env:
+          PAYLOAD_TO:    ${{ github.event.client_payload.to }}
+          PAYLOAD_FROM:  ${{ github.event.client_payload.from }}
+          INPUT_TO:            ${{ inputs.to }}
+          INPUT_FROM:          ${{ inputs.from }}
+          INPUT_TARGET_BRANCH: ${{ inputs.target_branch }}
+        run: |
+          to="${PAYLOAD_TO:-$INPUT_TO}"
+          from="${PAYLOAD_FROM:-$INPUT_FROM}"
+          # Minor label is the X.Y prefix of the target X.Y.Z (strips `.Z`).
+          minor="${to%.*}"
+          # Base branch: repository_dispatch is patch-only, so X.Y of `to` is
+          # always the target version branch. workflow_dispatch supplies the
+          # branch explicitly. Deriving both from `to` (via PAYLOAD_TO signal)
+          # closes an old divergence class where payload.minor could disagree
+          # with X.Y of payload.to.
+          if [ -n "$PAYLOAD_TO" ]; then
+            base="${to%.*}"
+          else
+            base="$INPUT_TARGET_BRANCH"
+          fi
+          # PR-title `from` clause. Present when `from` is provided (input or
+          # payload); empty when the script will auto-detect it downstream.
+          # The verification report in the PR body still carries the derived
+          # value, so nothing is lost.
+          if [ -n "$from" ]; then
+            from_clause="from \`$from\` "
+          else
+            from_clause=""
+          fi
+          {
+            echo "to=$to"
+            echo "from=$from"
+            echo "minor=$minor"
+            echo "base=$base"
+            echo "from_clause=$from_clause"
+          } >> "$GITHUB_OUTPUT"
+
+  bump:
+    needs: [compute]
+    uses: josh-wong/actions/.github/workflows/bump-doc-versions-reusable.yaml@main
+    with:
+      product:     <PRODUCT>
+      repo:        internal
+      minor:       ${{ needs.compute.outputs.minor }}
+      to:          ${{ needs.compute.outputs.to }}
+      from:        ${{ needs.compute.outputs.from }}
+      base_branch: ${{ needs.compute.outputs.base }}
+      head_branch: update-${{ needs.compute.outputs.minor }}-version-to-${{ needs.compute.outputs.to }}
+      pr_title: "[${{ needs.compute.outputs.minor }}] Update version references ${{ needs.compute.outputs.from_clause }}to `${{ needs.compute.outputs.to }}`"
+      pr_body_style: internal
+      dry_run: ${{ inputs.dry_run || false }}
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}

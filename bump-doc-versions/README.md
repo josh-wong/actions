@@ -18,7 +18,9 @@ bump-doc-versions/
 ├── products/
 │   ├── scalardb.json             # ScalarDB artifact allowlists
 │   └── scalardl.json             # ScalarDL artifact allowlists
-├── sample-usage.yaml             # example caller workflows for each repo
+├── samples/
+│   ├── trigger-version-bump.yaml # public-repo trigger (copy to docs-<PRODUCT>)
+│   └── bump-doc-versions.yaml    # internal-repo caller (copy to docs-internal-<PRODUCT>)
 └── README.md
 ```
 
@@ -114,10 +116,10 @@ The set of Maven artifacts, Docker images, release repos, JAR bases, and env-var
 
 The reusable workflow lives at [`.github/workflows/bump-doc-versions-reusable.yaml`](../.github/workflows/bump-doc-versions-reusable.yaml).
 
-See [`sample-usage.yaml`](./sample-usage.yaml) for ready-to-copy caller workflows:
+See the ready-to-copy caller workflows under [`samples/`](./samples/):
 
-- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo (patch bumps only) or a manual `workflow_dispatch` (patch, minor, or major bumps). **Lives on `main` only** — every dispatch supplies the target branch as data (either `client_payload.minor` for `repository_dispatch`, which doubles as the version branch name for patch bumps, or the required `target_branch` input for `workflow_dispatch`). The PR-title minor label (`[3.17]`, `[3.19]`, `[4.0]`) is derived from the X.Y prefix of `to`, and the current `from` version is auto-detected from the target branch — so the manual-dispatch form asks only for `target_branch` and `to`. No per-version-branch duplication of the caller is needed.
-- **Public repo caller** — `docs-scalardb/.github/workflows/trigger-version-bump.yml`. Detects a `className` change in `docusaurus.config.js` on push to `main`, extracts `(minor, from, to)`, `repository_dispatch`es into the internal repo, and runs a safety-net bump on the public repo itself.
+- **[`samples/trigger-version-bump.yaml`](./samples/trigger-version-bump.yaml)** — the public-repo trigger. Copy to `docs-scalardb/.github/workflows/trigger-version-bump.yml` (same for ScalarDL). Detects a `className` change in `docusaurus.config.js` on push to `main`, extracts `(minor, from, to)`, `repository_dispatch`es into the internal repo, and runs a safety-net bump on the public repo itself.
+- **[`samples/bump-doc-versions.yaml`](./samples/bump-doc-versions.yaml)** — the internal-repo caller. Copy to `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml` (same for ScalarDL). Accepts a `repository_dispatch` from the public repo (patch bumps only) or a manual `workflow_dispatch` (patch, minor, or major bumps). **Lives on `main` only** — every dispatch supplies the target branch as data (either `client_payload.to` for `repository_dispatch`, or the required `target_branch` input for `workflow_dispatch`). The PR-title minor label (`[3.17]`, `[3.19]`, `[4.0]`) is derived from the X.Y prefix of `to`, and the current `from` version is auto-detected from the target branch — so the manual-dispatch form asks only for `target_branch` and `to`.
 
 ### Tokens
 
@@ -128,7 +130,7 @@ The reusable workflow accepts one secret, `token`, with the following required p
 
 For **same-repo operations** (the internal caller pushing a bump PR to its own repo), the built-in `GITHUB_TOKEN` is sufficient — pass it via `secrets: inherit` or `token: ${{ secrets.GITHUB_TOKEN }}`.
 
-For the **cross-repo `repository_dispatch`** in the public-repo caller, a personal access token (or GitHub App installation token) with `contents: write` on the target internal repo is required. Store it as `BUMP_DISPATCH_PAT` in the public repo's secrets. See `sample-usage.yaml` for the exact usage.
+For the **cross-repo `repository_dispatch`** in the public-repo caller, a personal access token (or GitHub App installation token) with `contents: write` on the target internal repo is required. Store it as `BUMP_DISPATCH_PAT` in the public repo's secrets. See [`samples/trigger-version-bump.yaml`](./samples/trigger-version-bump.yaml) for the exact usage.
 
 ## 🧪 Testing
 
