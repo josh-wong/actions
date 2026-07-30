@@ -141,11 +141,14 @@ jobs:
 #
 # Dispatch model at a glance:
 #   - Patch bump (X.Y.Z1 → X.Y.Z2): target_branch = "3.17" (the version branch).
-#     `minor` and `from` may be omitted; the script auto-derives them.
+#     `from` may be omitted; the script auto-derives it.
 #   - Minor bump  (3.18.X → 3.19.0): target_branch = "3" (next-minor branch).
-#     Provide `minor: 3.19` and `from: 3.18.X` explicitly.
+#     `from: 3.18.X` is required.
 #   - Major bump  (3.18.X → 4.0.0): target_branch = "main".
-#     Provide `minor: 4.0` and `from: 3.18.X` explicitly.
+#     `from: 3.18.X` is required.
+#
+# In every case the PR-title minor label (e.g., `[3.17]`, `[3.19]`, `[4.0]`)
+# is derived from the X.Y prefix of `to` — no separate `minor` input needed.
 
 name: 🔢 Bump version references in docs
 
@@ -159,16 +162,11 @@ on:
         required: true
         type: string
       to:
-        description: 'New version to bump to (e.g., "3.17.4" for a patch, "3.19.0" for a minor, "4.0.0" for a major)'
+        description: 'New version to bump to (e.g., "3.17.4" for a patch, "3.19.0" for a minor, "4.0.0" for a major). The X.Y prefix of this value is used as the PR-title label.'
         required: true
         type: string
       from:
         description: 'Current version to bump from (e.g., "3.17.3"). REQUIRED when target_branch is not an X.Y branch (i.e., "main" or "3" — cross-version bumps); auto-detected otherwise from an anchored match in this repo.'
-        required: false
-        type: string
-        default: ''
-      minor:
-        description: 'Target minor label for the PR title (e.g., "3.19" or "4.0"). REQUIRED when target_branch is not an X.Y branch; auto-derived otherwise from target_branch.'
         required: false
         type: string
         default: ''
@@ -187,53 +185,75 @@ jobs:
     # Validates workflow_dispatch inputs against `target_branch`.
     # Two cases:
     #   1. target_branch is an X.Y branch (3.14, …, 3.18): same-minor patch bump.
-    #      Both `minor` and `from` are optional — the script auto-derives them.
+    #      `from` is optional — the script auto-derives it.
     #   2. target_branch is a non-X.Y branch (`main`, `3`): cross-version bump.
-    #      Both `minor` and `from` are required — the branch name carries no
-    #      version info, and auto-detection can't tell 3.18 apart from 3.19.
-    # Skipped on repository_dispatch (client_payload always carries `minor`).
+    #      `from` is required — auto-detection can't tell 3.18 apart from 3.19.
+    # Skipped on repository_dispatch (client_payload always carries `from`).
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Validate dispatch context
         env:
           TARGET_BRANCH: ${{ inputs.target_branch }}
-          MINOR_INPUT:   ${{ inputs.minor }}
           FROM_INPUT:    ${{ inputs.from }}
         run: |
           # Case 1: X.Y target branch — always valid.
           if [[ "${TARGET_BRANCH}" =~ ^[0-9]+\.[0-9]+$ ]]; then
             exit 0
           fi
-          # Case 2: non-X.Y target branch — both `minor` and `from` are required.
-          problems=0
-          if [ -z "$MINOR_INPUT" ]; then
-            echo "::error::'minor' input is required when target_branch is '${TARGET_BRANCH}' (non-X.Y). Provide an explicit target-minor label (e.g., '3.19' or '4.0')."
-            problems=1
-          fi
+          # Case 2: non-X.Y target branch — `from` is required.
           if [ -z "$FROM_INPUT" ]; then
             echo "::error::'from' input is required when target_branch is '${TARGET_BRANCH}' (cross-version bumps can't auto-detect the source version). Provide the current source version (e.g., '3.17.3')."
-            problems=1
+            exit 1
           fi
-          exit $problems
 
-  bump:
+  compute:
+    # Derives the values the reusable workflow needs from the payload / inputs.
+    # Emitted as job outputs so the `bump` job body stays readable.
     needs: [guard]
     if: always() && (needs.guard.result == 'success' || needs.guard.result == 'skipped')
+    runs-on: ubuntu-latest
+    outputs:
+      to:    ${{ steps.derive.outputs.to }}
+      from:  ${{ steps.derive.outputs.from }}
+      minor: ${{ steps.derive.outputs.minor }}
+      base:  ${{ steps.derive.outputs.base }}
+    steps:
+      - id: derive
+        env:
+          PAYLOAD_TO:    ${{ github.event.client_payload.to }}
+          PAYLOAD_FROM:  ${{ github.event.client_payload.from }}
+          PAYLOAD_MINOR: ${{ github.event.client_payload.minor }}
+          INPUT_TO:            ${{ inputs.to }}
+          INPUT_FROM:          ${{ inputs.from }}
+          INPUT_TARGET_BRANCH: ${{ inputs.target_branch }}
+        run: |
+          to="${PAYLOAD_TO:-$INPUT_TO}"
+          from="${PAYLOAD_FROM:-$INPUT_FROM}"
+          # Minor label is the X.Y prefix of the target X.Y.Z (strips `.Z`).
+          minor="${to%.*}"
+          # Base branch: payload.minor doubles as the branch for patch bumps;
+          # otherwise the user's explicit target_branch.
+          base="${PAYLOAD_MINOR:-$INPUT_TARGET_BRANCH}"
+          {
+            echo "to=$to"
+            echo "from=$from"
+            echo "minor=$minor"
+            echo "base=$base"
+          } >> "$GITHUB_OUTPUT"
+
+  bump:
+    needs: [compute]
     uses: josh-wong/actions/.github/workflows/bump-doc-versions-reusable.yaml@main
     with:
       product:     <PRODUCT>
       repo:        internal
-      # Target branch is passed as data by both event paths:
-      #   - repository_dispatch: client_payload.minor doubles as the branch name
-      #     (patch bumps always target an X.Y branch that equals the minor).
-      #   - workflow_dispatch: inputs.target_branch is the explicit user choice.
-      minor:       ${{ github.event.client_payload.minor || inputs.minor || inputs.target_branch }}
-      to:          ${{ github.event.client_payload.to    || inputs.to }}
-      from:        ${{ github.event.client_payload.from  || inputs.from }}
-      base_branch: ${{ github.event.client_payload.minor || inputs.target_branch }}
-      head_branch: update-${{ github.event.client_payload.minor || inputs.minor || inputs.target_branch }}-version-to-${{ github.event.client_payload.to || inputs.to }}
-      pr_title: "[${{ github.event.client_payload.minor || inputs.minor || inputs.target_branch }}] Update version references from `${{ github.event.client_payload.from || inputs.from }}` to `${{ github.event.client_payload.to || inputs.to }}`"
+      minor:       ${{ needs.compute.outputs.minor }}
+      to:          ${{ needs.compute.outputs.to }}
+      from:        ${{ needs.compute.outputs.from }}
+      base_branch: ${{ needs.compute.outputs.base }}
+      head_branch: update-${{ needs.compute.outputs.minor }}-version-to-${{ needs.compute.outputs.to }}
+      pr_title: "[${{ needs.compute.outputs.minor }}] Update version references from `${{ needs.compute.outputs.from }}` to `${{ needs.compute.outputs.to }}`"
       pr_body_style: internal
       dry_run: ${{ inputs.dry_run || false }}
     secrets:
