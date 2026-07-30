@@ -12,7 +12,7 @@ bump-doc-versions/
 ├── build-pr-body.mjs             # renders a PR body from the JSON report
 ├── detect-classname-diff.mjs     # parses className diffs (used by the public caller)
 ├── lib/
-│   ├── patterns.mjs              # P1–P10 anchored pattern engine
+│   ├── patterns.mjs              # P1–P11 anchored pattern engine
 │   ├── scope.mjs                 # file walker + .version-bump-ignore
 │   └── docusaurus-config.mjs     # className read/write for docusaurus.config.js
 ├── products/
@@ -133,6 +133,18 @@ For **same-repo operations** (the internal caller pushing a bump PR to its own r
 For the **cross-repo `repository_dispatch`** in the public-repo caller, a personal access token (or GitHub App installation token) with `contents: write` on the target internal repo is required. Store it as `BUMP_DISPATCH_PAT` in the public repo's secrets. See [`samples/trigger-version-bump.yaml`](./samples/trigger-version-bump.yaml) for the exact usage.
 
 ## 🧪 Testing
+
+### Unit tests
+
+Run the built-in `node:test` suite (Node 20+, zero-dep):
+
+```bash
+node --test bump-doc-versions/
+```
+
+Covers the `deriveFromInternal` auto-detect — single-anchored happy path, same-version across multiple scanner patterns, within-minor drift ambiguity, cross-minor drift ambiguity, empty-tree null path, bare-prose ignored, nested subdirectories walked, P9 analytics-spark coordinate, and mixed-scanner cross-minor ambiguity. Nine tests, ~110ms.
+
+### End-to-end dry run against a real branch
 
 A safe way to test against a branch of `docs-internal-scalardb` without committing to it:
 
