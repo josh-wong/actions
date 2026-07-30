@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
     inputs:
       minor:
-        description: 'Minor version entry to bump (for example, "3.17", or "current" for whichever minor is currently labeled `current`)'
+        description: 'Minor version entry to bump (e.g., "3.19", or "current" for whichever minor is currently labeled `current`)'
         required: true
         type: string
       to:
@@ -140,13 +140,11 @@ jobs:
 # has to be duplicated onto each version branch.
 #
 # Dispatch model at a glance:
-#   - Patch bump (X.Y.Z1 → X.Y.Z2): target_branch = "3.17" (the version branch).
+#   - Patch bump (X.Y.Z1 → X.Y.Z2): target_branch = "3.18" (the version branch).
 #   - Minor bump  (3.18.X → 3.19.0): target_branch = "3" (next-minor branch).
 #   - Major bump  (3.18.X → 4.0.0): target_branch = "main".
 #
-# `from` is auto-detected from anchored X.Y.Z matches on the target branch
-# in every case. The PR-title minor label (e.g., `[3.17]`, `[3.19]`, `[4.0]`)
-# is derived from the X.Y prefix of `to`.
+# `from` is auto-detected from anchored X.Y.Z matches on the target branch in every case. The PR-title minor label (e.g., `[3.18]`, `[3.19]`, `[4.0]`) is derived from the X.Y prefix of `to`.
 
 name: 🔢 Bump version references in docs
 
@@ -156,15 +154,15 @@ on:
   workflow_dispatch:
     inputs:
       target_branch:
-        description: 'Branch to bump on and open the PR against (e.g., "3.17" for a patch, "3" for a minor, "main" for a major)'
+        description: 'Branch to bump on and open the PR against (e.g., "3.18" for a patch, "3" for a minor, "main" for a major)'
         required: true
         type: string
       to:
-        description: 'New version to bump to (e.g., "3.17.4" for a patch, "3.19.0" for a minor, "4.0.0" for a major). The X.Y prefix of this value is used as the PR-title label.'
+        description: 'New version to bump to (e.g., "3.18.2" for a patch, "3.19.0" for a minor, "4.0.0" for a major). The X.Y prefix of this value is used as the PR-title label.'
         required: true
         type: string
       from:
-        description: 'Override the auto-detected current version (e.g., "3.17.3"). Usually leave empty — the script scans the target branch for the current X.Y.Z. Provide explicitly only when auto-detection is ambiguous (drift) or you need a non-current source.'
+        description: 'Override the auto-detected current version (e.g., "3.18.1"). Usually leave empty. The script scans the target branch for the current X.Y.Z. Provide explicitly only when auto-detection is ambiguous (drift) or you need a non-current source.'
         required: false
         type: string
         default: ''
