@@ -107,8 +107,10 @@ async function main() {
 
   // ── Derive --from if omitted ──────────────────────────────────────────────
   //
-  // Auto-derivation only makes sense for same-minor bumps. For cross-minor
-  // (minor / major) bumps on internal, --from must be provided explicitly.
+  // Auto-detect scans docs/en-us for anchored X.Y.Z matches regardless of
+  // minor. One unique X.Y.Z wins; anything else (multiple minors present,
+  // drift within a minor, empty tree) surfaces as an error or a clean no-op.
+  // The caller can always override by passing --from explicitly.
   let fromVer = values.from;
   if (!fromVer) {
     if (values.repo === 'public') {
@@ -117,19 +119,12 @@ async function main() {
         fail(3, `Could not derive --from from className for entry ${values.minor}`);
       }
     } else {
-      // On internal, auto-derivation requires --minor to be X.Y form
-      // (so we know what X.Y to scan for). For branch names like 'main' or
-      // '3', the caller must pass --from.
-      if (!/^\d+\.\d+$/.test(values.minor)) {
-        fail(3, `--from is required when --minor is not in X.Y form (got --minor '${values.minor}'). Auto-derivation only supports same-minor patch bumps on X.Y branches; for cross-version (minor or major) bumps, pass --from explicitly.`);
-      }
-      const derived = await deriveFromInternal(root, effectiveMinor, config);
+      const derived = await deriveFromInternal(root, config);
       if (derived.error) fail(3, derived.error);
       fromVer = derived.version;
       if (!fromVer) {
-        // Empty tree for this minor is a legitimate no-op — bail cleanly.
         console.log(
-          `No anchored ${values.product} version references found under docs/en-us for minor ${effectiveMinor}; nothing to do.`,
+          `No anchored ${values.product} version references found under docs/en-us; nothing to do.`,
         );
         await maybeWriteEmptyReport(values, effectiveMinor, null);
         process.exit(2);
@@ -263,7 +258,7 @@ async function main() {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-async function deriveFromInternal(root, minor, config) {
+async function deriveFromInternal(root, config) {
   const scanners = buildScanners(config);
   const seen = new Set();
   for await (const abs of walkScope(root, ['docs/en-us'], () => false)) {
@@ -272,7 +267,7 @@ async function deriveFromInternal(root, minor, config) {
       s.regex.lastIndex = 0;
       let m;
       while ((m = s.regex.exec(content)) !== null) {
-        if (m[1] === minor) seen.add(`${m[1]}.${m[2]}`);
+        seen.add(`${m[1]}.${m[2]}`);
       }
     }
   }
@@ -280,7 +275,7 @@ async function deriveFromInternal(root, minor, config) {
   if (seen.size > 1) {
     return {
       error:
-        `Ambiguous --from: multiple X.Y.Z values found under docs/en-us for minor ${minor}: ` +
+        `Ambiguous --from: multiple X.Y.Z values found under docs/en-us: ` +
         [...seen].sort().join(', ') +
         `. Pass --from explicitly.`,
     };

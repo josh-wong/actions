@@ -46,7 +46,7 @@ node bump-doc-versions/bump-doc-versions.mjs \
 | `--repo` | yes | `internal` or `public`. Selects the file-scope map (see below). |
 | `--minor` | yes | Scope selector. On `--repo public`: `X.Y` (e.g., `3.17`) or `current`. On `--repo internal`: any string — typically the branch name (`3.17`, `main`, `3`). Used as a label on internal (PR title / report); the actual match filter is driven by `--from`. |
 | `--to` | yes | New version to bump to (e.g., `3.17.4` for a patch, `3.19.0` for a minor, `4.0.0` for a major). Must satisfy `X.Y === --minor` on `--repo public`; may differ on `--repo internal` (cross-version bumps are allowed there). |
-| `--from` | no | Current version to bump from (e.g., `3.17.3`). Auto-detected from `className` (public repo) or the first anchored match under `docs/en-us/**` (internal repo, `--minor` in `X.Y` form) when omitted. **Required for cross-version bumps** on internal. Errors out if the auto-detection is ambiguous. |
+| `--from` | no | Current version to bump from (e.g., `3.17.3`). Auto-detected from `className` (public repo) or the single unique anchored `X.Y.Z` under `docs/en-us/**` (internal repo — works for patch, minor, and major bumps alike) when omitted. Errors out if the auto-detection is ambiguous (multiple distinct `X.Y.Z` values in the tree). |
 | `--root` | no | Root of the target repo. Defaults to `.`. |
 | `--dry-run` | no | Do not write files or update `className`. Report only. |
 | `--json-report <path>` | no | Write a machine-readable report to `<path>`. |
@@ -94,7 +94,7 @@ All eleven patterns are enumerated in the design doc. In short:
 
 **Scope guard:** for every pattern except P11, only occurrences where `X.Y === --from`'s X.Y are rewritten (i.e., the source minor). For a same-minor patch bump on the `3.17` branch, `3.16.5` and `3.18.0` in a prose line are left alone. For a cross-version bump (e.g., `--from 3.18.5 --to 3.19.0` on `main`), all `3.18.X` references get rewritten to `3.19.0`, while `3.17.X` and `3.19.X` mentions are left alone. P11 additionally rewrites bare source-minor `X.Y` references directly to the target-minor `X.Y`, and only fires on cross-version bumps (a same-minor P11 would be a no-op that could strip a bare minor down to `X.Y.Z`).
 
-**Cross-version bumps** (minor or major): the script logs a `⚠️ cross-version bump` warning and the generated PR body includes the same warning as a GitHub `[!IMPORTANT]` admonition. `--from` must be provided explicitly — auto-detection only supports same-minor patch bumps.
+**Cross-version bumps** (minor or major): the script logs a `⚠️ cross-version bump` warning and the generated PR body includes the same warning as a GitHub `[!IMPORTANT]` admonition. `--from` is auto-detected from the target branch on internal (as for patch bumps); provide it explicitly only when the branch has drift.
 
 ### Ignore markers
 
@@ -116,7 +116,7 @@ The reusable workflow lives at [`.github/workflows/bump-doc-versions-reusable.ya
 
 See [`sample-usage.yaml`](./sample-usage.yaml) for ready-to-copy caller workflows:
 
-- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo (patch bumps only) or a manual `workflow_dispatch` (patch, minor, or major bumps). **Lives on `main` only** — every dispatch supplies the target branch as data (either `client_payload.minor` for `repository_dispatch`, which doubles as the version branch name for patch bumps, or the required `target_branch` input for `workflow_dispatch`). The PR-title minor label (`[3.17]`, `[3.19]`, `[4.0]`) is derived from the X.Y prefix of `to`, so no separate `minor` input is needed. No per-version-branch duplication of the caller is needed.
+- **Internal repo caller** — `docs-internal-scalardb/.github/workflows/bump-doc-versions.yml`. Accepts a `repository_dispatch` from the public repo (patch bumps only) or a manual `workflow_dispatch` (patch, minor, or major bumps). **Lives on `main` only** — every dispatch supplies the target branch as data (either `client_payload.minor` for `repository_dispatch`, which doubles as the version branch name for patch bumps, or the required `target_branch` input for `workflow_dispatch`). The PR-title minor label (`[3.17]`, `[3.19]`, `[4.0]`) is derived from the X.Y prefix of `to`, and the current `from` version is auto-detected from the target branch — so the manual-dispatch form asks only for `target_branch` and `to`. No per-version-branch duplication of the caller is needed.
 - **Public repo caller** — `docs-scalardb/.github/workflows/trigger-version-bump.yml`. Detects a `className` change in `docusaurus.config.js` on push to `main`, extracts `(minor, from, to)`, `repository_dispatch`es into the internal repo, and runs a safety-net bump on the public repo itself.
 
 ### Tokens

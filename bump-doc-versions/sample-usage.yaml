@@ -141,14 +141,12 @@ jobs:
 #
 # Dispatch model at a glance:
 #   - Patch bump (X.Y.Z1 → X.Y.Z2): target_branch = "3.17" (the version branch).
-#     `from` may be omitted; the script auto-derives it.
 #   - Minor bump  (3.18.X → 3.19.0): target_branch = "3" (next-minor branch).
-#     `from: 3.18.X` is required.
 #   - Major bump  (3.18.X → 4.0.0): target_branch = "main".
-#     `from: 3.18.X` is required.
 #
-# In every case the PR-title minor label (e.g., `[3.17]`, `[3.19]`, `[4.0]`)
-# is derived from the X.Y prefix of `to` — no separate `minor` input needed.
+# `from` is auto-detected from anchored X.Y.Z matches on the target branch
+# in every case. The PR-title minor label (e.g., `[3.17]`, `[3.19]`, `[4.0]`)
+# is derived from the X.Y prefix of `to`.
 
 name: 🔢 Bump version references in docs
 
@@ -166,7 +164,7 @@ on:
         required: true
         type: string
       from:
-        description: 'Current version to bump from (e.g., "3.17.3"). REQUIRED when target_branch is not an X.Y branch (i.e., "main" or "3" — cross-version bumps); auto-detected otherwise from an anchored match in this repo.'
+        description: 'Override the auto-detected current version (e.g., "3.17.3"). Usually leave empty — the script scans the target branch for the current X.Y.Z. Provide explicitly only when auto-detection is ambiguous (drift) or you need a non-current source.'
         required: false
         type: string
         default: ''
@@ -181,37 +179,9 @@ permissions:
   pull-requests: write
 
 jobs:
-  guard:
-    # Validates workflow_dispatch inputs against `target_branch`.
-    # Two cases:
-    #   1. target_branch is an X.Y branch (3.14, …, 3.18): same-minor patch bump.
-    #      `from` is optional — the script auto-derives it.
-    #   2. target_branch is a non-X.Y branch (`main`, `3`): cross-version bump.
-    #      `from` is required — auto-detection can't tell 3.18 apart from 3.19.
-    # Skipped on repository_dispatch (client_payload always carries `from`).
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Validate dispatch context
-        env:
-          TARGET_BRANCH: ${{ inputs.target_branch }}
-          FROM_INPUT:    ${{ inputs.from }}
-        run: |
-          # Case 1: X.Y target branch — always valid.
-          if [[ "${TARGET_BRANCH}" =~ ^[0-9]+\.[0-9]+$ ]]; then
-            exit 0
-          fi
-          # Case 2: non-X.Y target branch — `from` is required.
-          if [ -z "$FROM_INPUT" ]; then
-            echo "::error::'from' input is required when target_branch is '${TARGET_BRANCH}' (cross-version bumps can't auto-detect the source version). Provide the current source version (e.g., '3.17.3')."
-            exit 1
-          fi
-
   compute:
     # Derives the values the reusable workflow needs from the payload / inputs.
     # Emitted as job outputs so the `bump` job body stays readable.
-    needs: [guard]
-    if: always() && (needs.guard.result == 'success' || needs.guard.result == 'skipped')
     runs-on: ubuntu-latest
     outputs:
       to:    ${{ steps.derive.outputs.to }}
