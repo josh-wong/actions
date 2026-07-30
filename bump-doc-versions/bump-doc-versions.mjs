@@ -258,7 +258,7 @@ async function main() {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-async function deriveFromInternal(root, config) {
+export async function deriveFromInternal(root, config) {
   const scanners = buildScanners(config);
   const seen = new Set();
   for await (const abs of walkScope(root, ['docs/en-us'], () => false)) {
@@ -338,7 +338,9 @@ Exit codes:
 `);
 }
 
-main().catch((e) => {
-  console.error(e && e.stack ? e.stack : String(e));
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((e) => {
+    console.error(e && e.stack ? e.stack : String(e));
+    process.exit(1);
+  });
+}

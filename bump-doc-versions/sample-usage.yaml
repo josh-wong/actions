@@ -184,16 +184,16 @@ jobs:
     # Emitted as job outputs so the `bump` job body stays readable.
     runs-on: ubuntu-latest
     outputs:
-      to:    ${{ steps.derive.outputs.to }}
-      from:  ${{ steps.derive.outputs.from }}
-      minor: ${{ steps.derive.outputs.minor }}
-      base:  ${{ steps.derive.outputs.base }}
+      to:          ${{ steps.derive.outputs.to }}
+      from:        ${{ steps.derive.outputs.from }}
+      minor:       ${{ steps.derive.outputs.minor }}
+      base:        ${{ steps.derive.outputs.base }}
+      from_clause: ${{ steps.derive.outputs.from_clause }}
     steps:
       - id: derive
         env:
           PAYLOAD_TO:    ${{ github.event.client_payload.to }}
           PAYLOAD_FROM:  ${{ github.event.client_payload.from }}
-          PAYLOAD_MINOR: ${{ github.event.client_payload.minor }}
           INPUT_TO:            ${{ inputs.to }}
           INPUT_FROM:          ${{ inputs.from }}
           INPUT_TARGET_BRANCH: ${{ inputs.target_branch }}
@@ -202,14 +202,31 @@ jobs:
           from="${PAYLOAD_FROM:-$INPUT_FROM}"
           # Minor label is the X.Y prefix of the target X.Y.Z (strips `.Z`).
           minor="${to%.*}"
-          # Base branch: payload.minor doubles as the branch for patch bumps;
-          # otherwise the user's explicit target_branch.
-          base="${PAYLOAD_MINOR:-$INPUT_TARGET_BRANCH}"
+          # Base branch: repository_dispatch is patch-only, so X.Y of `to` is
+          # always the target version branch. workflow_dispatch supplies the
+          # branch explicitly. Deriving both from `to` (via PAYLOAD_TO signal)
+          # closes an old divergence class where payload.minor could disagree
+          # with X.Y of payload.to.
+          if [ -n "$PAYLOAD_TO" ]; then
+            base="${to%.*}"
+          else
+            base="$INPUT_TARGET_BRANCH"
+          fi
+          # PR-title `from` clause. Present when `from` is provided (input or
+          # payload); empty when the script will auto-detect it downstream —
+          # the verification report in the PR body still carries the derived
+          # value, so nothing is lost.
+          if [ -n "$from" ]; then
+            from_clause="from \`$from\` "
+          else
+            from_clause=""
+          fi
           {
             echo "to=$to"
             echo "from=$from"
             echo "minor=$minor"
             echo "base=$base"
+            echo "from_clause=$from_clause"
           } >> "$GITHUB_OUTPUT"
 
   bump:
@@ -223,7 +240,7 @@ jobs:
       from:        ${{ needs.compute.outputs.from }}
       base_branch: ${{ needs.compute.outputs.base }}
       head_branch: update-${{ needs.compute.outputs.minor }}-version-to-${{ needs.compute.outputs.to }}
-      pr_title: "[${{ needs.compute.outputs.minor }}] Update version references from `${{ needs.compute.outputs.from }}` to `${{ needs.compute.outputs.to }}`"
+      pr_title: "[${{ needs.compute.outputs.minor }}] Update version references ${{ needs.compute.outputs.from_clause }}to `${{ needs.compute.outputs.to }}`"
       pr_body_style: internal
       dry_run: ${{ inputs.dry_run || false }}
     secrets:

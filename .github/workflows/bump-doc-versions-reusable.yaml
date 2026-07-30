@@ -59,6 +59,10 @@ on:
 jobs:
   bump:
     runs-on: ubuntu-latest
+    # Safety cap. The auto-detect walk under docs/en-us is unbounded; a symlink
+    # loop, pathological tree, or fs.readdir misbehavior could otherwise sit
+    # until GitHub's 360-minute default. A real bump completes in < 2 min.
+    timeout-minutes: 15
     permissions:
       contents: write
       pull-requests: write
