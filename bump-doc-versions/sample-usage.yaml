@@ -1,14 +1,11 @@
 # Sample usage for bump-doc-versions.
 #
-# Two caller workflows per product. Copy each into the appropriate repo under
-# .github/workflows/, replacing <PRODUCT> with `scalardb` or `scalardl`.
+# Two caller workflows per product. Copy each into the appropriate repo under .github/workflows/, replacing <PRODUCT> with `scalardb` or `scalardl`.
 
-# ─── ①  Public repo:  docs-scalardb/.github/workflows/trigger-version-bump.yml ─
-# Fires on any push to `main` that touches `docusaurus.config.js`. Detects a
-# `className` diff, then:
+# ─── ①  Public repo:  docs-scalardb/.github/workflows/trigger-version-bump.yml
+# Fires on any push to `main` that touches `docusaurus.config.js`. Detects a `className` diff, then:
 #   (a) dispatches into the internal repo for the authoritative bump PR, and
-#   (b) runs a safety-net bump against the public repo itself (idempotent —
-#       becomes a no-op if the internal sync PR lands first).
+#   (b) runs a safety-net bump against the public repo itself (idempotent; becomes a no-op if the internal sync PR lands first).
 
 name: 🔢 Trigger version bump on className change
 
@@ -131,13 +128,9 @@ jobs:
 
 ---
 # ─── ②  Internal repo: docs-internal-<PRODUCT>/.github/workflows/bump-doc-versions.yml
-# Runs on repository_dispatch from the public repo (patch bumps only),
-# or on manual workflow_dispatch (patch, minor, and major bumps).
+# Runs on repository_dispatch from the public repo (patch bumps only), or on manual workflow_dispatch (patch, minor, and major bumps).
 #
-# Lives on `main` only. Every dispatch supplies the target branch as
-# data (either `client_payload.minor` for repository_dispatch, or the
-# `target_branch` input for workflow_dispatch), so the workflow never
-# has to be duplicated onto each version branch.
+# Lives on `main` only. Every dispatch supplies the target branch as data (either `client_payload.minor` for repository_dispatch, or the `target_branch` input for workflow_dispatch), so the workflow never has to be duplicated onto each version branch.
 #
 # Dispatch model at a glance:
 #   - Patch bump (X.Y.Z1 → X.Y.Z2): target_branch = "3.18" (the version branch).
@@ -178,8 +171,7 @@ permissions:
 
 jobs:
   compute:
-    # Derives the values the reusable workflow needs from the payload / inputs.
-    # Emitted as job outputs so the `bump` job body stays readable.
+    # Derives the values the reusable workflow needs from the payload/inputs. Emitted as job outputs so the `bump` job body stays readable.
     runs-on: ubuntu-latest
     outputs:
       to:          ${{ steps.derive.outputs.to }}
@@ -211,8 +203,8 @@ jobs:
             base="$INPUT_TARGET_BRANCH"
           fi
           # PR-title `from` clause. Present when `from` is provided (input or
-          # payload); empty when the script will auto-detect it downstream —
-          # the verification report in the PR body still carries the derived
+          # payload); empty when the script will auto-detect it downstream.
+          # The verification report in the PR body still carries the derived
           # value, so nothing is lost.
           if [ -n "$from" ]; then
             from_clause="from \`$from\` "
