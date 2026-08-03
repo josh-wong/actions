@@ -3,9 +3,9 @@
 # Copy to `.github/workflows/trigger-version-bump.yml` in the public docs repo
 # (e.g., docs-scalardb, docs-scalardl), replacing <PRODUCT> with `scalardb` or `scalardl`.
 #
-# Fires on any push to `main` that touches `docusaurus.config.js`. Detects a `className` diff, then:
-#   (a) dispatches into the internal repo for the authoritative bump PR, and
-#   (b) runs a safety-net bump against the public repo itself (idempotent; becomes a no-op if the internal sync PR lands first).
+# Fires on any push to `main` that touches `docusaurus.config.js`. Detects a `className` diff, then dispatches a `bump-patch` event into the internal repo, where the authoritative bump PR is opened against the matching version branch (e.g., `3.17`).
+#
+# The public repo's docs are updated via the internal repo's sync workflow (sync-docs-<PRODUCT>.yml on each version branch) after the internal PR merges — no PR is opened against the public repo directly.
 
 name: 🔢 Trigger version bump on className change
 
@@ -13,29 +13,12 @@ on:
   push:
     branches: [main]
     paths: [docusaurus.config.js]
-  workflow_dispatch:
-    inputs:
-      minor:
-        description: 'Minor version entry to bump (e.g., "3.19", or "current" for whichever minor is currently labeled `current`)'
-        required: true
-        type: string
-      to:
-        description: 'New patch version to bump to (e.g., "3.18.2"). This is the version the docs will now reference.'
-        required: true
-        type: string
-      from:
-        description: 'Current patch version to bump from (e.g., "3.18.1"). Optional: Auto-detected from `className` (in the docs site config) or the first anchored match (in this repo) when omitted.'
-        required: false
-        type: string
-        default: ''
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   detect:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       bumps: ${{ steps.diff.outputs.bumps }}
@@ -89,39 +72,4 @@ jobs:
               event_type: 'bump-patch',
               client_payload: { product: '<PRODUCT>', ...bump },
             });
-
-  safety-net-public:
-    needs: detect
-    if: needs.detect.outputs.bumps != '' && needs.detect.outputs.bumps != '[]'
-    strategy:
-      matrix:
-        bump: ${{ fromJson(needs.detect.outputs.bumps) }}
-    uses: josh-wong/actions/.github/workflows/bump-doc-versions-reusable.yaml@main
-    with:
-      product:     <PRODUCT>
-      repo:        public
-      minor:       ${{ matrix.bump.minor }}
-      from:        ${{ matrix.bump.from }}
-      to:          ${{ matrix.bump.to }}
-      base_branch: main
-      head_branch: bump/<PRODUCT>-${{ matrix.bump.to }}
-      pr_title:    "chore: bump ${{ matrix.bump.from }} → ${{ matrix.bump.to }} (safety net)"
-      pr_body_style: public-safety-net
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
-
-  manual:
-    if: github.event_name == 'workflow_dispatch'
-    uses: josh-wong/actions/.github/workflows/bump-doc-versions-reusable.yaml@main
-    with:
-      product:     <PRODUCT>
-      repo:        public
-      minor:       ${{ inputs.minor }}
-      from:        ${{ inputs.from }}
-      to:          ${{ inputs.to }}
-      base_branch: main
-      head_branch: bump/<PRODUCT>-${{ inputs.to }}
-      pr_title:    "chore: bump ${{ inputs.from }} → ${{ inputs.to }} (manual)"
-      pr_body_style: public-safety-net
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
+            core.notice(`Dispatched bump-patch { minor: ${bump.minor}, from: ${bump.from}, to: ${bump.to} } into ${context.repo.owner}/docs-internal-<PRODUCT>`);
