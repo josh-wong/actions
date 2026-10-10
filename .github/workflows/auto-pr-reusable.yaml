@@ -7,6 +7,10 @@ on:
         required: true
         type: string
         description: 'The base name of the projects used in the repository. For example, "Project" if projects are named "Project <version>".'
+    secrets:
+      GH_PR_PAT:
+        required: true
+        description: 'A personal access token that can push backport branches and open pull requests in the calling repository.'
 
 env:
   TERM: xterm
