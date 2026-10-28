@@ -71,7 +71,7 @@ class MappingTests(unittest.TestCase):
         self.assertIn("merged on GitHub", body)
         self.assertIn("https://github.com/josh-wong/actions/pull/4", body)
         self.assertIn("gitlab/backport.py", body)
-        self.assertIn("Model: Sonnet | Review effort: medium", body)
+        self.assertIn("Suggested: Sonnet | Review effort: low", body)
         self.assertIn(notify.SKIP_MARKER, body)
         self.assertNotIn("\n/assign", body)
         self.assertNotIn("@person", body)

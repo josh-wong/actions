@@ -172,7 +172,7 @@ Counterpart files or patterns to review:
 
 ## Model and review effort
 
-Model: Sonnet | Review effort: medium
+Suggested: Sonnet | Review effort: low
 
 {marker}
 """
