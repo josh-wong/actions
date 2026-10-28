@@ -1,0 +1,16 @@
+{
+  "github_repository": "josh-wong/actions",
+  "gitlab_project": "josh-wong/actions",
+  "mappings": [
+    {
+      "name": "backports",
+      "github": ["auto-pr-script/**", ".github/workflows/auto-pr-reusable.yaml"],
+      "gitlab": ["gitlab/backport.py", "gitlab/auto-mr-backport.yml", "gitlab/test_backport.py"]
+    },
+    {
+      "name": "reminder automation",
+      "github": ["sync-reminders/**", ".github/workflows/remind-gitlab.yaml"],
+      "gitlab": ["sync-reminders/**", ".gitlab-ci.yml"]
+    }
+  ]
+}
