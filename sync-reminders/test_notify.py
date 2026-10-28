@@ -67,6 +67,8 @@ class MappingTests(unittest.TestCase):
         change = {"number": 4, "sha": SHA, "changed": {"auto-pr-script/file\n/assign @person"}}
         mappings = notify.select_mappings(CONFIG, "github", change["changed"])
         title, body, marker = notify.issue_content(CONFIG, "github", change, mappings)
+        self.assertIn("after GitHub #4", title)
+        self.assertIn("merged on GitHub", body)
         self.assertIn("https://github.com/josh-wong/actions/pull/4", body)
         self.assertIn("gitlab/backport.py", body)
         self.assertIn("Model: Sonnet | Review effort: medium", body)

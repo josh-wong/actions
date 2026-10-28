@@ -12,6 +12,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 SKIP_MARKER = "<!-- actions-sync-reminder:skip -->"
+HOST_NAMES = {"github": "GitHub", "gitlab": "GitLab"}
 
 
 class NoRedirect(HTTPRedirectHandler):
@@ -121,10 +122,11 @@ def issue_content(config, host, change, mappings):
     files = "\n".join(f"- `{quote(path, safe='/._-')}`" for path in changed)
     equivalents = "\n".join(f"- **{mapping['name']}:** " + ", ".join(
         f"`{quote(path, safe='/._-*')}`" for path in mapping[other]) for mapping in mappings)
-    title = f"Review equivalent automation after {host.title()} #{number} ({sha[:7]})"
+    name = HOST_NAMES[host]
+    title = f"Review equivalent automation after {name} #{number} ({sha[:7]})"
     body = f"""## Description
 
-Review the equivalent automation in this repository after [the source change]({source_url}) merged on {host.title()}. Implementations may differ; decide whether an update is needed rather than copying files verbatim.
+Review the equivalent automation in this repository after [the source change]({source_url}) merged on {name}. Implementations may differ; decide whether an update is needed rather than copying files verbatim.
 
 ## Requirements
 
@@ -150,7 +152,7 @@ N/A – no automatic file copying or repository pushes are performed.
 
 ## Environment
 
-Source: {host.title()} `{project}`, merged change #{number}.
+Source: {name} `{project}`, merged change #{number}.
 
 ## Relevant logs
 
