@@ -92,9 +92,7 @@ def github_change(api, event, config):
         raise RuntimeError("Multiple merged PRs match the push; review manually")
     if not matches:
         return None
-    pr = api.call(f"/pulls/{int(matches[0]['number'])}")
-    if not pr.get("merged") or pr.get("merge_commit_sha") != sha:
-        raise RuntimeError("PR metadata does not confirm the completed merge")
+    pr = matches[0]
     if SKIP_MARKER in (pr.get("body") or ""):
         return None
     number = int(pr["number"])

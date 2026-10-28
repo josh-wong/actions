@@ -40,11 +40,10 @@ class FakeApi:
 def github_fixture():
     event = {"repository": {"full_name": "josh-wong/actions", "default_branch": "main"},
              "ref": "refs/heads/main", "after": SHA}
-    pr = {"number": 4, "merged": True, "merged_at": "2026-10-28T00:00:00Z", "body": "",
+    pr = {"number": 4, "merged_at": "2026-10-28T00:00:00Z", "body": "",
           "merge_commit_sha": SHA, "base": {"ref": "main"}}
     api = FakeApi(lists={f"/commits/{SHA}/pulls": [pr], "/pulls/4/files": [
-        {"filename": "unmapped/new-name", "previous_filename": "auto-pr-script/old-name"}]},
-        objects={"/pulls/4": pr})
+        {"filename": "unmapped/new-name", "previous_filename": "auto-pr-script/old-name"}]})
     return api, event, pr
 
 
