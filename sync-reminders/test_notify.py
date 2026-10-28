@@ -48,15 +48,6 @@ def github_fixture():
     return api, event, pr
 
 
-def gitlab_fixture():
-    env = {"CI_PIPELINE_SOURCE": "push", "CI_COMMIT_BRANCH": "main", "CI_DEFAULT_BRANCH": "main",
-           "CI_PROJECT_PATH": "josh-wong/actions", "CI_COMMIT_SHA": SHA}
-    mr = {"iid": 5, "state": "merged", "target_branch": "main", "merge_commit_sha": SHA,
-          "description": "", "changes_count": "1"}
-    api = FakeApi("gitlab", lists={f"/repository/commits/{SHA}/merge_requests": [mr],
-                  "/merge_requests/5/diffs": [{"old_path": "gitlab/backport.py", "new_path": "elsewhere.py"}]},
-                  objects={"/merge_requests/5": mr})
-    return api, env, mr
 
 
 class MappingTests(unittest.TestCase):
@@ -111,44 +102,14 @@ class MergeTests(unittest.TestCase):
             self.assertIsNone(notify.github_change(api, event, CONFIG))
             self.assertEqual(api.reads, [])
 
-    def test_gitlab_merge_squash_and_fast_forward_match_exactly(self):
-        for key in ["merge_commit_sha", "squash_commit_sha", "sha"]:
-            api, env, mr = gitlab_fixture()
-            mr.pop("merge_commit_sha")
-            mr[key] = SHA
-            change = notify.gitlab_change(api, env, CONFIG)
-            self.assertIn("gitlab/backport.py", change["changed"])
-            self.assertEqual(change["number"], 5)
 
-    def test_gitlab_non_default_unmerged_wrong_sha_or_direct_push_is_ignored(self):
-        api, env, mr = gitlab_fixture()
-        env["CI_COMMIT_BRANCH"] = "feature"
-        self.assertIsNone(notify.gitlab_change(api, env, CONFIG))
-        self.assertEqual(api.reads, [])
-        for change in [{"state": "opened"}, {"target_branch": "other"}, {"merge_commit_sha": "b" * 40}]:
-            api, env, mr = gitlab_fixture()
-            mr.update(change)
-            self.assertIsNone(notify.gitlab_change(api, env, CONFIG))
-        api, env, mr = gitlab_fixture()
-        api.lists.clear()
-        self.assertIsNone(notify.gitlab_change(api, env, CONFIG))
 
     def test_skip_marker_prevents_reverse_reminder(self):
         api, event, pr = github_fixture()
         pr["body"] = notify.SKIP_MARKER
         self.assertIsNone(notify.github_change(api, event, CONFIG))
         self.assertNotIn("/pulls/4/files", api.reads)
-        api, env, mr = gitlab_fixture()
-        mr["description"] = notify.SKIP_MARKER
-        self.assertIsNone(notify.gitlab_change(api, env, CONFIG))
-        self.assertNotIn("/merge_requests/5/diffs", api.reads)
 
-    def test_incomplete_gitlab_diff_listing_fails(self):
-        for count in ["1000+", "", "2"]:
-            api, env, mr = gitlab_fixture()
-            mr["changes_count"] = count
-            with self.assertRaisesRegex(RuntimeError, "Incomplete"):
-                notify.gitlab_change(api, env, CONFIG)
 
 
 class DeliveryTests(unittest.TestCase):
@@ -199,22 +160,21 @@ class DeliveryTests(unittest.TestCase):
         self.assertIsNone(notify.NoRedirect().redirect_request(None, None, 302, None, None, "https://other.test"))
 
     def test_dry_run_never_requires_destination_token_or_writes(self):
-        api, event, pr = github_fixture()
-        change = notify.github_change(api, event, CONFIG)
-        with patch.dict(os.environ, {}, clear=True), patch("sys.argv", ["notify.py", "gitlab", "--dry-run"]), \
-             patch("notify.gitlab_change", return_value=change), patch("notify.send_reminder") as send, \
+        change = {"number": 4, "sha": SHA, "changed": {"auto-pr-script/file"}}
+        event = Path(__file__).with_name("mappings.json")
+        with patch.dict(os.environ, {"GITHUB_EVENT_PATH": str(event)}, clear=True), patch("sys.argv", ["notify.py", "github", "--dry-run"]), \
+             patch("notify.github_change", return_value=change), patch("notify.send_reminder") as send, \
              redirect_stdout(io.StringIO()) as output:
-            # Use a GitLab mapped path for the selected source host.
-            change["changed"] = {"gitlab/backport.py"}
             notify.main()
             self.assertIn("Counterpart files", output.getvalue())
             send.assert_not_called()
 
     def test_missing_token_fails_for_relevant_change_but_unrelated_change_skips(self):
-        change = {"number": 1, "sha": SHA, "changed": {"gitlab/backport.py"}}
-        with patch.dict(os.environ, {}, clear=True), patch("sys.argv", ["notify.py", "gitlab"]), \
-             patch("notify.gitlab_change", return_value=change), patch("notify.send_reminder") as send:
-            with self.assertRaisesRegex(RuntimeError, "GH_REMINDER_TOKEN"):
+        change = {"number": 1, "sha": SHA, "changed": {"auto-pr-script/file"}}
+        event = Path(__file__).with_name("mappings.json")
+        with patch.dict(os.environ, {"GITHUB_EVENT_PATH": str(event)}, clear=True), patch("sys.argv", ["notify.py", "github"]), \
+             patch("notify.github_change", return_value=change), patch("notify.send_reminder") as send:
+            with self.assertRaisesRegex(RuntimeError, "GITLAB_REMINDER_TOKEN"):
                 notify.main()
             change["changed"] = {"docs/unrelated.md"}
             notify.main()

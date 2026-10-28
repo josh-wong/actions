@@ -1,46 +1,39 @@
-# Counterpart review reminders
+# GitHub counterpart review reminders
 
-The GitHub and GitLab `josh-wong/actions` repositories have independent implementations and histories. After relevant automation changes merge into either repository's default branch, a job opens a reminder issue in the other repository. The issue asks for a human review of equivalent behavior; it does not copy files, cherry-pick commits, or push repository history.
+This repository's GitHub workflow opens a review reminder in `gitlab.com/josh-wong/actions` after mapped automation changes merge on GitHub. The GitLab repository maintains its own jobs and notifier. Their implementations and histories are independent; this repository does not contain the GitLab CI configuration or reusable GitLab jobs.
 
-## Choose which changes need review
+## Review relevant files
 
-The explicit pairs in `mappings.json` describe equivalent automation. Each entry has a name and GitHub and GitLab file patterns. Currently, backport automation and the reminder system itself are mapped. Other workflows without a mapped equivalent do not generate reminders. Add a pair when a new equivalent implementation exists, and review mapping changes on both hosts.
+`mappings.json` explicitly pairs automation files on the two hosts. Only mapped files generate a reminder; unrelated changes are skipped. The backport and reminder systems are mapped initially. Renamed files match their old and new paths, and deleted files remain eligible. Reminder issues include the source change, merge commit, changed paths, and counterpart patterns to review. They ask for equivalent behavior to be reviewed, not for files to be copied verbatim.
 
-For example, changing GitHub's `auto-pr-script/create_pull_requests` requests review of GitLab's `gitlab/backport.py` and related pipeline and test files. The implementations are allowed to differ. Reminder issues include the source PR/MR, commit link, relevant changed paths, and counterpart file patterns. Paths are URL-encoded to prevent mentions and GitLab quick actions in filenames from being interpreted.
-
-Both sides run on default-branch pushes and verify through their host API that the exact pushed commit completed a merged PR/MR into that branch. Direct pushes, unmerged changes, and pushes on other branches are skipped. Only the merge at the push tip is processed; do not batch several merged PRs/MRs into a single manual push and expect a reminder for each one. Changed-file lists include both sides of renames and deleted paths. An incomplete or capped API response fails the job for manual review rather than silently ignoring files.
-
-## Configure credentials
-
-Each source runner needs permission to create and list issues in the destination repository. Source metadata is public; GitHub uses its built-in read token and GitLab needs no source API secret. The jobs do not need a token for pushing Git history. Some legacy token scopes permit more than issue access, so review the actual permissions before storing a credential.
-
-1. In the GitHub repository, add `GITLAB_REMINDER_TOKEN` as an Actions secret. Use the narrowest GitLab credential supported by the destination for listing all project issues and creating issues. If using a legacy personal access token, it needs `api`; prefer a dedicated automation account restricted to the target project rather than a broad personal credential. GitLab.com Free does not offer project access tokens. Review available fine-grained permissions in your account before choosing a legacy token.
-2. In the GitLab repository, add `GH_REMINDER_TOKEN` as a masked, hidden, protected CI/CD variable. Use a GitHub fine-grained token restricted to `josh-wong/actions` with **Issues: Read and write**. Protect the GitLab default branch so its push pipeline receives the variable. No Contents or Workflows write permission is needed for this reminder token.
-3. Review and merge `.github/workflows/remind-gitlab.yaml` on GitHub and the `remind-github` job in `.gitlab-ci.yml` on GitLab. Keep `notify.py`, `mappings.json`, and their tests available on both hosts; change each copy through its own review process.
-4. Record token owners and expiration dates in the credential manager, and set renewal reminders before expiry. Keep tokens out of Git, job logs, and issue bodies. Do not configure push mirrors or the obsolete mirror secret `GITLAB_TOKEN` for this design.
-
-Missing destination credentials fail the job only when a relevant merged change requires a reminder. Unrelated changes can finish without them. The GitLab reminder runs even if an earlier check fails, because the change has already merged and still needs counterpart review.
+The notifier verifies that the pushed commit completed a merged change into the default branch. Direct pushes, other branches, and unmerged changes are skipped. Only the merge at the push tip is considered; do not batch several merged changes into a manual push and expect one issue for each. Incomplete or capped API file lists fail for manual review rather than silently omitting files.
 
 ## Handle reminders and retries
 
-Review the source change, then apply and test any relevant counterpart update, or close the issue with an explanation of why no update is needed. Add this exact marker to the counterpart PR/MR description before merging it to suppress a reminder back to the original host.
+Apply and test any relevant counterpart update, or close the reminder with an explanation of why no change is needed. Put this exact marker in the counterpart PR/MR description before merging a completed port to suppress a reminder back to the source.
 
 ```text
 <!-- actions-sync-reminder:skip -->
 ```
 
-The skip marker applies to the whole merge. If a counterpart update also introduces a new behavior that needs review on the original host, omit the marker and let that review reminder open. Creating or editing an issue never triggers these jobs, so issue creation itself cannot cause a loop.
+The marker applies to the whole merge. Omit it if the counterpart update introduces additional behavior that needs review on the original host. Creating or editing an issue does not trigger either notifier.
 
-Each generated issue includes a marker keyed by source host, repository, and merge commit. The job checks open and closed destination issues before creating one. Closing a reminder does not cause retries to reopen or duplicate it. Per-commit concurrency on GitHub and a resource group on GitLab prevent simultaneous retries for the same source revision. If the create request succeeds but its response is lost, retry the job; it checks for the marker before attempting another create request. Do not delete provenance markers from generated issues.
+Generated issues carry a provenance marker keyed by source host, repository, and merge commit. Open and closed issues are checked before creating another reminder, so retries do not duplicate a closed issue. Do not delete these markers. If an issue-create response is lost after the server accepts it, retry the original job: the notifier checks for the marker before attempting another POST. If a capped file list prevents processing, review that merge manually.
 
-If a job fails because an API response is incomplete, review the merge manually and open the necessary reminder yourself. If it fails for credentials, permissions, or network access, correct the cause and rerun the original job. There is no automatic retry of issue creation after a failed POST.
+## Configure the GitHub workflow
+
+`.github/workflows/remind-gitlab.yaml` runs on default-branch pushes using `ubuntu-slim`. The notifier reads the GitHub push event and verifies the exact merged PR through GitHub's API. It uses the built-in read token for source metadata and never runs on unmerged PR code. Its per-commit concurrency group prevents simultaneous retries for the same source revision.
+
+1. Add `GITLAB_REMINDER_TOKEN` as a GitHub Actions secret. Use the narrowest GitLab credential supported by the destination for listing and creating project issues. Legacy personal tokens need `api`, which grants broader access; review the permissions and prefer a dedicated automation identity restricted to the destination project. GitLab.com Free does not offer project access tokens.
+2. Review and merge the GitHub workflow, notifier, file mappings, and tests. The opposite direction is configured separately in the GitLab repository. No GitLab pipeline file or Git push credential is needed in this repository.
+3. Record the token owner, expiry, and renewal reminders in the credential manager. Keep credentials out of Git, logs, and issue bodies.
+
+Unrelated merges can finish without the destination token; a relevant merge that requires a reminder fails visibly if the token is missing. Correct credential or network failures and rerun the original job.
 
 ## Validate changes
 
-Run `python3 -m unittest discover -s sync-reminders -p 'test_*.py'` for fixture-only checks. Tests cover source merge verification, renamed paths, mappings, skip markers, duplicate prevention, pagination limits, uncertain POST recovery, dry runs, missing tokens, and sanitized errors. Tests create no hosted issues and make no network calls.
+Run `python3 -m unittest discover -s sync-reminders -p 'test_*.py'`. The GitHub reminder test workflow runs these fixture-only checks on relevant PRs and default-branch pushes using `ubuntu-slim`, without destination credentials or hosted issue creation.
 
-Use `python3 sync-reminders/notify.py github --dry-run` or `python3 sync-reminders/notify.py gitlab --dry-run` inside the corresponding CI job environment to print a proposed issue without creating it. A dry run still reads source API metadata but needs no destination token. GitHub needs its push event file; GitLab needs its normal pipeline variables.
+Inside a GitHub job's push-event environment, run `python3 sync-reminders/notify.py github --dry-run` to print a proposed issue without creating it. The dry run reads source metadata but needs no destination token. Before activation is complete, merge an approved mapped change, confirm the expected GitLab issue appears, and retry to check duplicate prevention. Verify the reverse direction separately in GitLab and use the skip marker for a completed counterpart update.
 
-Before marking setup complete, merge one approved mapped change on each host and confirm the expected issue appears in the other repository. Retry both jobs and confirm no duplicate appears, then verify a counterpart update with the skip marker does not generate another reminder. These live checks require configured credentials and are separate from the local test suite.
-
-GitHub documents [commit-associated PRs](https://docs.github.com/en/rest/commits/commits#list-pull-requests-associated-with-a-commit), [PR file lists](https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files), and [issue creation permissions](https://docs.github.com/en/rest/issues/issues#create-an-issue). GitLab documents [MR diffs](https://docs.gitlab.com/api/merge_requests/#list-merge-request-diffs), [project issues](https://docs.gitlab.com/api/issues/#list-project-issues), and [token scopes](https://docs.gitlab.com/user/profile/personal_access_tokens/).
+GitHub documents [commit-associated PRs](https://docs.github.com/en/rest/commits/commits#list-pull-requests-associated-with-a-commit) and [PR file lists](https://docs.github.com/en/rest/pulls/pulls#list-pull-requests-files). GitLab documents [project issues](https://docs.gitlab.com/api/issues/#list-project-issues).

@@ -2,7 +2,7 @@
 
 This repository contains GitHub Actions and automation workflows for various development tasks.
 
-It also provides [shared GitLab CI/CD jobs](gitlab/README.md), including post-merge backport MRs. Consumers include the central `josh-wong/actions` pipeline at a reviewed commit SHA and supply their own project settings and token. The GitLab and GitHub repositories have independent implementations and histories. [Counterpart review reminders](sync-reminders/README.md) flag relevant merged changes for human review on the other host.
+[Counterpart review reminders](sync-reminders/README.md) flag relevant merged GitHub automation changes for review in the independent GitLab actions repository. Files and history are not mirrored.
 
 ## 📁 Available actions
 

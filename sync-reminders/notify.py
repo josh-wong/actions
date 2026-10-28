@@ -102,32 +102,6 @@ def github_change(api, event, config):
     return {"number": number, "sha": sha, "changed": changed}
 
 
-def gitlab_change(api, env, config):
-    if (env.get("CI_PIPELINE_SOURCE") != "push"
-            or env.get("CI_COMMIT_BRANCH") != env.get("CI_DEFAULT_BRANCH")
-            or env.get("CI_PROJECT_PATH") != config["gitlab_project"]):
-        return None
-    sha = env["CI_COMMIT_SHA"]
-    if not re.fullmatch(r"[a-f0-9]{40}", sha):
-        raise ValueError("Invalid pipeline commit SHA")
-    candidates = api.pages(f"/repository/commits/{sha}/merge_requests")
-    matches = [mr for mr in candidates if mr.get("state") == "merged"
-               and mr.get("target_branch") == env["CI_DEFAULT_BRANCH"]
-               and sha == (mr.get("merge_commit_sha") or mr.get("squash_commit_sha") or mr.get("sha"))]
-    if len(matches) > 1:
-        raise RuntimeError("Multiple merged MRs match the pipeline; review manually")
-    if not matches:
-        return None
-    number = int(matches[0]["iid"])
-    mr = api.call(f"/merge_requests/{number}")
-    if SKIP_MARKER in (mr.get("description") or ""):
-        return None
-    files = api.pages(f"/merge_requests/{number}/diffs")
-    count = str(mr.get("changes_count", ""))
-    if not count.isdigit() or int(count) != len(files):
-        raise RuntimeError("Incomplete GitLab changed-file list; review this change manually")
-    changed = {name for file in files for name in [file.get("old_path"), file.get("new_path")] if name}
-    return {"number": number, "sha": sha, "changed": changed}
 
 
 def issue_content(config, host, change, mappings):
@@ -220,22 +194,15 @@ def send_reminder(destination, title, body, marker):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("host", choices=["github", "gitlab"])
+    parser.add_argument("host", choices=["github"])
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     config = json.loads(Path(__file__).with_name("mappings.json").read_text())
     validate_config(config)
-    if args.host == "github":
-        source = Api("github", config["github_repository"], os.environ.get("GITHUB_TOKEN"))
-        change = github_change(source, json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text()), config)
-        destination = Api("gitlab", config["gitlab_project"], os.environ.get("GITLAB_REMINDER_TOKEN"))
-        token_name = "GITLAB_REMINDER_TOKEN"
-    else:
-        # The central GitLab project is public; source metadata needs no secret.
-        source = Api("gitlab", config["gitlab_project"])
-        change = gitlab_change(source, os.environ, config)
-        destination = Api("github", config["github_repository"], os.environ.get("GH_REMINDER_TOKEN"))
-        token_name = "GH_REMINDER_TOKEN"
+    source = Api("github", config["github_repository"], os.environ.get("GITHUB_TOKEN"))
+    change = github_change(source, json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text()), config)
+    destination = Api("gitlab", config["gitlab_project"], os.environ.get("GITLAB_REMINDER_TOKEN"))
+    token_name = "GITLAB_REMINDER_TOKEN"
     mappings = select_mappings(config, args.host, change["changed"]) if change else []
     if not mappings:
         print("No relevant merged change; skipping")
