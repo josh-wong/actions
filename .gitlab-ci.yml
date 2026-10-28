@@ -1,0 +1,14 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+
+test-gitlab-automation:
+  image: python:3.13-bookworm
+  timeout: 10 minutes
+  interruptible: true
+  script:
+    - python3 --version
+    - git --version
+    - python3 -m unittest discover -s gitlab -p 'test_*.py'

@@ -2,6 +2,8 @@
 
 This repository contains GitHub Actions and automation workflows for various development tasks.
 
+It also provides [shared GitLab CI/CD jobs](gitlab/README.md), including post-merge backport MRs. Consumers include the central `josh-wong/actions` pipeline at a reviewed commit SHA and supply their own project settings and token. The GitLab and GitHub copies use the same repository history.
+
 ## 📁 Available actions
 
 Choose from the following automation workflows to enhance your development process.
