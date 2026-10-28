@@ -1,0 +1,29 @@
+name: Remind GitLab about equivalent automation
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: gitlab-reminder-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    runs-on: ubuntu-slim
+    timeout-minutes: 10
+    steps:
+      - name: Check out the trusted merged revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Open a counterpart review issue when mapped files changed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLAB_REMINDER_TOKEN: ${{ secrets.GITLAB_REMINDER_TOKEN }}
+        run: python3 sync-reminders/notify.py github

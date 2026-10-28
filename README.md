@@ -2,6 +2,8 @@
 
 This repository contains GitHub Actions and automation workflows for various development tasks.
 
+[Counterpart review reminders](sync-reminders/README.md) flag relevant merged GitHub automation changes for review in the independent GitLab actions repository. Files and history are not mirrored.
+
 ## 📁 Available actions
 
 Choose from the following automation workflows to enhance your development process.
